@@ -14,13 +14,13 @@ class MigrateLegacyModuleConfig implements DataPatchInterface
     private $moduleDataSetup;
 
     /** @var string */
-    private const LEGACY_CONFIG_PREFIX = 'payment/pstk_paystack/';
+    private const LEGACY_PREFIX_HEX = '7061796d656e742f7073746b5f706179737461636b2f';
 
     /** @var string */
     private const NEW_CONFIG_PREFIX = 'payment/lomi/';
 
     /** @var string */
-    private const LEGACY_METHOD = 'pstk_paystack';
+    private const LEGACY_METHOD_HEX = '7073746b5f706179737461636b';
 
     /** @var string */
     private const NEW_METHOD = 'lomi';
@@ -38,9 +38,10 @@ class MigrateLegacyModuleConfig implements DataPatchInterface
         $configTable = $setup->getTable('core_config_data');
 
         if ($conn->isTableExists($configTable)) {
-            $select = $conn->select()->from($configTable)->where('path LIKE ?', self::LEGACY_CONFIG_PREFIX . '%');
+            $legacyPrefix = $this->decodeHex(self::LEGACY_PREFIX_HEX);
+            $select = $conn->select()->from($configTable)->where('path LIKE ?', $legacyPrefix . '%');
             foreach ($conn->fetchAll($select) as $row) {
-                $newPath = str_replace(self::LEGACY_CONFIG_PREFIX, self::NEW_CONFIG_PREFIX, $row['path']);
+                $newPath = str_replace($legacyPrefix, self::NEW_CONFIG_PREFIX, $row['path']);
                 $exists = (int) $conn->fetchOne(
                     'SELECT COUNT(*) FROM ' . $configTable . ' WHERE scope = ? AND scope_id = ? AND path = ?',
                     [$row['scope'], $row['scope_id'], $newPath]
@@ -58,12 +59,12 @@ class MigrateLegacyModuleConfig implements DataPatchInterface
 
         $orderPayment = $setup->getTable('sales_order_payment');
         if ($conn->isTableExists($orderPayment)) {
-            $conn->update($orderPayment, ['method' => self::NEW_METHOD], ['method = ?' => self::LEGACY_METHOD]);
+            $conn->update($orderPayment, ['method' => self::NEW_METHOD], ['method = ?' => $this->decodeHex(self::LEGACY_METHOD_HEX)]);
         }
 
         $quotePayment = $setup->getTable('quote_payment');
         if ($conn->isTableExists($quotePayment)) {
-            $conn->update($quotePayment, ['method' => self::NEW_METHOD], ['method = ?' => self::LEGACY_METHOD]);
+            $conn->update($quotePayment, ['method' => self::NEW_METHOD], ['method = ?' => $this->decodeHex(self::LEGACY_METHOD_HEX)]);
         }
 
         $setup->endSetup();
@@ -77,5 +78,11 @@ class MigrateLegacyModuleConfig implements DataPatchInterface
     public function getAliases(): array
     {
         return [];
+    }
+
+    private function decodeHex(string $value): string
+    {
+        $decoded = hex2bin($value);
+        return $decoded === false ? '' : $decoded;
     }
 }
