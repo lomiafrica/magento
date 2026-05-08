@@ -1,10 +1,10 @@
 <?php
 
-namespace Pstk\Paystack\Controller\Payment;
+namespace Lomi\Payments\Controller\Payment;
 
-use Pstk\Paystack\Gateway\Exception\ApiException;
+use Lomi\Payments\Gateway\Exception\ApiException;
 
-class Webhook extends AbstractPaystackStandard
+class Webhook extends AbstractLomiPayment
 {
     public function execute()
     {
@@ -16,7 +16,7 @@ class Webhook extends AbstractPaystackStandard
             $this->logger->info('lomi. webhook: received request');
 
             $signature = $this->request->getHeader('X-Lomi-Signature') ?: '';
-            if (!$signature || !$this->paystackClient->validateWebhookSignature($rawBody, $signature)) {
+            if (!$signature || !$this->lomiClient->validateWebhookSignature($rawBody, $signature)) {
                 $this->logger->warning('lomi. webhook: signature validation failed');
                 $resultFactory->setHttpResponseCode(401);
                 $resultFactory->setContents('auth failed');
@@ -75,7 +75,7 @@ class Webhook extends AbstractPaystackStandard
             }
 
             try {
-                $session = $this->paystackClient->fetchCheckoutSession($useSessionId);
+                $session = $this->lomiClient->fetchCheckoutSession($useSessionId);
                 $this->checkoutSessionVerifier->verifyAndDispatch($order, $session);
             } catch (ApiException $e) {
                 $this->logger->error('lomi. webhook: API error', ['error' => $e->getMessage()]);

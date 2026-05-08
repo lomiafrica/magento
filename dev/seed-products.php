@@ -1,12 +1,11 @@
 <?php
 /**
  * Creates test products (with images) using the Magento application bootstrap.
- * Run inside the container: php seed-products.php
+ * Run inside the container: php app/code/Lomi/Payments/dev/seed-products.php
  */
 
 use Magento\Framework\App\Bootstrap;
 
-// Navigate up from dev/ to Magento root: dev -> Paystack -> Pstk -> code -> app -> html
 $magentoRoot = dirname(__DIR__, 5);
 require $magentoRoot . '/app/bootstrap.php';
 
@@ -20,10 +19,7 @@ try {
     // Area code already set
 }
 
-// Path where product images are mounted inside the container
-$imgDir = '/var/www/html/app/code/Pstk/Paystack/dev/img/products';
-
-// --- 1. Create a "Shop" category under root category (id=2) ---
+$imgDir = '/var/www/html/app/code/Lomi/Payments/dev/img/products';
 
 $categoryFactory = $objectManager->get(\Magento\Catalog\Model\CategoryFactory::class);
 $categoryRepository = $objectManager->get(\Magento\Catalog\Api\CategoryRepositoryInterface::class);
@@ -53,19 +49,17 @@ if ($existing && $existing->getId()) {
     echo "Created category 'Shop' (ID: $categoryId)\n";
 }
 
-// --- 2. Create 5 test products ---
-
 $productFactory = $objectManager->get(\Magento\Catalog\Api\Data\ProductInterfaceFactory::class);
 $productRepository = $objectManager->get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
 $stockRegistry = $objectManager->get(\Magento\CatalogInventory\Api\StockRegistryInterface::class);
 $categoryLinkManagement = $objectManager->get(\Magento\Catalog\Api\CategoryLinkManagementInterface::class);
 
 $products = [
-    ['sku' => 'paystack-tshirt',       'name' => 'Paystack T-Shirt',      'price' => 5000,  'image' => 'paystack-t-shirt.png'],
-    ['sku' => 'paystack-hoodie',       'name' => 'Paystack Hoodie',       'price' => 15000, 'image' => 'paystack-hoodie.png'],
-    ['sku' => 'paystack-cap',          'name' => 'Paystack Cap',          'price' => 3000,  'image' => 'paystack-cap.png'],
-    ['sku' => 'paystack-sticker-pack', 'name' => 'Paystack Sticker Pack', 'price' => 500,   'image' => 'paystack-stickers.png'],
-    ['sku' => 'paystack-water-bottle', 'name' => 'Paystack Water Bottle', 'price' => 7500,  'image' => 'paystack-water-bottle.png'],
+    ['sku' => 'lomi-tshirt',       'name' => 'lomi. T-Shirt',       'price' => 5000,  'image' => 'lomi-t-shirt.png'],
+    ['sku' => 'lomi-hoodie',       'name' => 'lomi. Hoodie',        'price' => 15000, 'image' => 'lomi-hoodie.png'],
+    ['sku' => 'lomi-cap',          'name' => 'lomi. Cap',           'price' => 3000,  'image' => 'lomi-cap.png'],
+    ['sku' => 'lomi-sticker-pack', 'name' => 'lomi. Sticker Pack',  'price' => 500,   'image' => 'lomi-stickers.png'],
+    ['sku' => 'lomi-water-bottle', 'name' => 'lomi. Water Bottle', 'price' => 7500,  'image' => 'lomi-water-bottle.png'],
 ];
 
 foreach ($products as $p) {
@@ -74,7 +68,6 @@ foreach ($products as $p) {
         echo "  Already exists: {$p['name']} (SKU: {$p['sku']})\n";
         continue;
     } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-        // Product doesn't exist, create it
     }
 
     $product = $productFactory->create();
@@ -87,10 +80,8 @@ foreach ($products as $p) {
     $product->setTypeId(\Magento\Catalog\Model\Product\Type::TYPE_SIMPLE);
     $product->setWeight(1);
 
-    // Add product image if available
     $imagePath = $imgDir . '/' . $p['image'];
     if (file_exists($imagePath)) {
-        // Copy to Magento's import directory (addImageToMediaGallery moves from there)
         $importDir = BP . '/pub/media/import';
         if (!is_dir($importDir)) {
             mkdir($importDir, 0775, true);
@@ -111,19 +102,15 @@ foreach ($products as $p) {
 
     $product = $productRepository->save($product);
 
-    // Set stock
     $stockItem = $stockRegistry->getStockItemBySku($p['sku']);
     $stockItem->setQty(100);
     $stockItem->setIsInStock(true);
     $stockRegistry->updateStockItemBySku($p['sku'], $stockItem);
 
-    // Assign to Shop category
     $categoryLinkManagement->assignProductToCategories($p['sku'], [$categoryId]);
 
-    echo "  Created: {$p['name']} — NGN " . number_format($p['price']) . "\n";
+    echo "  Created: {$p['name']} — " . number_format($p['price']) . "\n";
 }
-
-// --- 3. Update homepage CMS to show products ---
 
 $pageRepository = $objectManager->get(\Magento\Cms\Api\PageRepositoryInterface::class);
 $searchCriteriaBuilder = $objectManager->get(\Magento\Framework\Api\SearchCriteriaBuilder::class);
@@ -135,7 +122,7 @@ $searchCriteria = $searchCriteriaBuilder
 $pages = $pageRepository->getList($searchCriteria);
 $items = $pages->getItems();
 
-$widgetContent = '<div class="page-main"><h2>Welcome to the Paystack Test Store</h2>'
+$widgetContent = '<div class="page-main"><h2>Welcome to the lomi. test store</h2>'
     . '{{widget type="Magento\CatalogWidget\Block\Product\ProductsList" title="Our Products" products_count="5" template="Magento_CatalogWidget::product/widget/content/grid.phtml" conditions_encoded="^[`1`:^[`type`:`Magento||CatalogWidget||Model||Rule||Condition||Combine`,`aggregator`:`all`,`value`:`1`,`new_child`:``^]^]"}}'
     . '</div>';
 

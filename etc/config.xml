@@ -2,11 +2,11 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
     <default>
         <payment>
-            <pstk_paystack>
+            <lomi>
                 <debug>1</debug>
                 <active>0</active>
                 <test_mode>1</test_mode>
-                <model>Pstk\Paystack\Model\Payment\Paystack</model>
+                <model>Lomi\Payments\Model\Payment\Lomi</model>
                 <title>lomi. (hosted checkout)</title>
                 <live_secret_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
                 <test_secret_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
@@ -20,7 +20,7 @@
                 <allowspecific>0</allowspecific>
                 <min_order_total>1</min_order_total>
                 <max_order_total>500000</max_order_total>
-            </pstk_paystack>
+            </lomi>
         </payment>
     </default>
 </config>

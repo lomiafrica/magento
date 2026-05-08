@@ -22,6 +22,9 @@ define(
         'use strict';
 
         return Component.extend({
+            defaults: {
+                template: 'Lomi_Payments/payment/lomi'
+            },
             redirectAfterPlaceOrder: false,
 
             isActive: function () {
@@ -38,8 +41,8 @@ define(
              */
             afterPlaceOrder: function () {
                 var checkoutConfig = window.checkoutConfig;
-                var paystackConfiguration = checkoutConfig.payment.pstk_paystack;
-                this.redirectToCustomAction(paystackConfiguration.integration_type_standard_url);
+                var lomiConfiguration = checkoutConfig.payment.lomi;
+                this.redirectToCustomAction(lomiConfiguration.integration_type_standard_url);
             }
         });
     }

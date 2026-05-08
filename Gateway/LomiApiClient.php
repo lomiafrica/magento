@@ -1,17 +1,17 @@
 <?php
 
-namespace Pstk\Paystack\Gateway;
+namespace Lomi\Payments\Gateway;
 
 use Magento\Directory\Model\CurrencyFactory;
 use Magento\Payment\Helper\Data as PaymentHelper;
 use Magento\Sales\Model\Order;
-use Pstk\Paystack\Gateway\Exception\ApiException;
-use Pstk\Paystack\Model\Payment\Paystack as PaystackModel;
+use Lomi\Payments\Gateway\Exception\ApiException;
+use Lomi\Payments\Model\Payment\Lomi as LomiMethod;
 
 /**
  * Lomi API HTTP client (checkout sessions).
  */
-class PaystackApiClient
+class LomiApiClient
 {
     /** @var string */
     private $secretKey;
@@ -30,7 +30,7 @@ class PaystackApiClient
         CurrencyFactory $currencyFactory
     ) {
         $this->currencyFactory = $currencyFactory;
-        $method = $paymentHelper->getMethodInstance(PaystackModel::CODE);
+        $method = $paymentHelper->getMethodInstance(LomiMethod::CODE);
         $this->testMode = (bool) $method->getConfigData('test_mode');
         $this->secretKey = (string) ($this->testMode
             ? $method->getConfigData('test_secret_key')
@@ -94,21 +94,21 @@ class PaystackApiClient
     }
 
     /**
-     * @deprecated Legacy Paystack transaction flow — removed.
+     * @deprecated Removed — use Lomi checkout sessions only.
      * @throws ApiException
      */
     public function initializeTransaction(array $params): object
     {
-        throw new ApiException('Paystack transaction initialize is not supported. Use Lomi checkout sessions.');
+        throw new ApiException('Direct transaction initialize is not supported. Use Lomi checkout sessions.');
     }
 
     /**
-     * @deprecated Legacy Paystack verify — removed.
+     * @deprecated Removed — use fetchCheckoutSession.
      * @throws ApiException
      */
     public function verifyTransaction(string $reference): object
     {
-        throw new ApiException('Paystack transaction verify is not supported. Use fetchCheckoutSession.');
+        throw new ApiException('Direct transaction verify is not supported. Use fetchCheckoutSession.');
     }
 
     public function logTransactionSuccess(string $transactionReference, string $publicKey): void
@@ -123,7 +123,7 @@ class PaystackApiClient
     private function request(string $method, string $endpoint, ?array $data): object
     {
         if ($this->secretKey === '') {
-            throw new ApiException('Lomi API secret key is not configured.');
+            throw new ApiException('lomi. API secret key is not configured.');
         }
 
         $url = $this->getBaseUrl() . $endpoint;
@@ -155,7 +155,7 @@ class PaystackApiClient
         if (curl_errno($ch)) {
             $error = curl_error($ch);
             curl_close($ch);
-            throw new ApiException('Lomi API request failed: ' . $error);
+            throw new ApiException('lomi. API request failed: ' . $error);
         }
 
         $statusCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -164,11 +164,11 @@ class PaystackApiClient
         $body = json_decode($response);
 
         if (!$body || !is_object($body)) {
-            throw new ApiException('Invalid JSON response from Lomi API', $statusCode);
+            throw new ApiException('Invalid JSON response from lomi. API', $statusCode);
         }
 
         if ($statusCode >= 400) {
-            $message = isset($body->message) ? (string) $body->message : 'Lomi API request failed';
+            $message = isset($body->message) ? (string) $body->message : 'lomi. API request failed';
             throw new ApiException($message, $statusCode);
         }
 

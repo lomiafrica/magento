@@ -1,68 +1,46 @@
 <?php
 
-/**
- * Paystack Magento2 Module using \Magento\Payment\Model\Method\AbstractMethod
- * Copyright (C) 2019 Paystack.com
- * 
- * This file is part of Pstk/Paystack.
- * 
- * Pstk/Paystack is free software => you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http =>//www.gnu.org/licenses/>.
- */
+namespace Lomi\Payments\Block\System\Config\Form\Field;
 
-namespace Pstk\Paystack\Block\System\Config\Form\Field;
-
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
 use Magento\Framework\Data\Form\Element\AbstractElement;
-use Magento\Store\Model\Store as Store;
+use Magento\Store\Model\StoreManagerInterface;
 
-/**
- * Backend system config datetime field renderer
- *
- * @api
- * @since 100.0.2
- */
 class Webhook extends \Magento\Config\Block\System\Config\Form\Field
 {
-
     /**
-     * @param \Magento\Backend\Block\Template\Context $context
-     * @param Store $store
-     * @param array $data
+     * @var StoreManagerInterface
      */
+    protected $storeManager;
+
     public function __construct(
         \Magento\Backend\Block\Template\Context $context,
-        Store $store,
-        array $data = []
+        StoreManagerInterface $storeManager,
+        array $data = [],
+        ?SecureHtmlRenderer $secureRenderer = null
     ) {
-        $this->store = $store;
-        
-        parent::__construct($context, $data);
+        $this->storeManager = $storeManager;
+        parent::__construct($context, $data, $secureRenderer);
     }
 
     /**
-     * Returns element html
-     *
      * @param AbstractElement $element
      * @return string
      */
     protected function _getElementHtml(AbstractElement $element)
     {
-        $webhookUrl = $this->store->getBaseUrl() . 'paystack/payment/webhook';
-        $value = "Configure this webhook URL in your <a target=\"_blank\" href=\"https://dashboard.lomi.africa\">lomi. dashboard</a> and use the same signing secret as below:<br><br>"
-                . "<strong style='color:red;'>$webhookUrl</strong>";
-        
-        $element->setValue($webhookUrl);
+        $webhookUrl = $this->storeManager->getStore()->getBaseUrl() . 'lomi/payment/webhook';
+        $dashboardUrl = 'https://dashboard.lomi.africa';
 
-        return $value;
+        $html = '<div class="lomi-webhook-hint">';
+        $html .= '<p><strong>' . __('Webhook URL for your store:') . '</strong></p>';
+        $html .= '<p><code>' . $this->escapeHtml($webhookUrl) . '</code></p>';
+        $html .= '<p>' . __(
+            'Add this URL in the lomi. dashboard under webhook settings: %1',
+            '<a href="' . $this->escapeUrl($dashboardUrl) . '" target="_blank" rel="noopener">' . $this->escapeHtml($dashboardUrl) . '</a>'
+        ) . '</p>';
+        $html .= '</div>';
+
+        return $html;
     }
 }

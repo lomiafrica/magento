@@ -1,16 +1,15 @@
 <?php
-namespace Pstk\Paystack\Api;
+
+namespace Lomi\Payments\Api;
 
 /**
- * PaymentManagementInterface
- *
  * @api
  */
 interface PaymentManagementInterface
 {
     /**
-     * @param string $reference
-     * @return bool
+     * @param string $reference Checkout session id
+     * @return string JSON
      */
     public function verifyPayment($reference);
 }

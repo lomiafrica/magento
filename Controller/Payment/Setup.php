@@ -1,11 +1,11 @@
 <?php
 
-namespace Pstk\Paystack\Controller\Payment;
+namespace Lomi\Payments\Controller\Payment;
 
 use Magento\Sales\Model\Order;
-use Pstk\Paystack\Gateway\Exception\ApiException;
+use Lomi\Payments\Gateway\Exception\ApiException;
 
-class Setup extends AbstractPaystackStandard
+class Setup extends AbstractLomiPayment
 {
     /**
      * @return \Magento\Framework\Controller\ResultInterface
@@ -41,14 +41,14 @@ class Setup extends AbstractPaystackStandard
             $email = $order->getBillingAddress()->getEmail();
         }
 
-        $successUrl = $baseUrl . 'paystack/payment/callback?increment_id=' . rawurlencode($order->getIncrementId())
+        $successUrl = $baseUrl . 'lomi/payment/callback?increment_id=' . rawurlencode($order->getIncrementId())
             . '&key=' . rawurlencode($order->getProtectCode());
 
         $cancelUrl = $store->getUrl('checkout/cart');
 
         $payload = [
             'currency_code' => strtoupper((string) $order->getOrderCurrencyCode()),
-            'amount' => $this->paystackClient->getOrderAmountMinorUnits($order),
+            'amount' => $this->lomiClient->getOrderAmountMinorUnits($order),
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
             'customer_email' => $email,
@@ -62,10 +62,10 @@ class Setup extends AbstractPaystackStandard
             ],
         ];
 
-        $data = $this->paystackClient->createCheckoutSession($payload);
+        $data = $this->lomiClient->createCheckoutSession($payload);
 
         if (empty($data->checkout_url) || empty($data->checkout_session_id)) {
-            throw new ApiException('Lomi did not return checkout_url or checkout_session_id.');
+            throw new ApiException('lomi. did not return checkout_url or checkout_session_id.');
         }
 
         $payment = $order->getPayment();

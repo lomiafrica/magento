@@ -1,8 +1,8 @@
-name: paystack-magento
+name: lomi-magento
 
 services:
   db:
-    container_name: paystack-db
+    container_name: lomi-db
     image: mariadb:10.6
     environment:
       MARIADB_ROOT_PASSWORD: magento
@@ -13,7 +13,7 @@ services:
       - db_data:/var/lib/mysql
 
   search:
-    container_name: paystack-search
+    container_name: lomi-search
     image: opensearchproject/opensearch:2.19.1
     environment:
       - discovery.type=single-node
@@ -23,15 +23,15 @@ services:
       - search_data:/usr/share/opensearch/data
 
   magento:
-    container_name: paystack-magento
+    container_name: lomi-magento
     build: .
     ports:
       - "8080:80"
     environment:
-      - PAYSTACK_TEST_PK=${PAYSTACK_TEST_PK}
-      - PAYSTACK_TEST_SK=${PAYSTACK_TEST_SK}
+      - LOMI_TEST_PK=${LOMI_TEST_PK}
+      - LOMI_TEST_SK=${LOMI_TEST_SK}
     volumes:
-      - ..:/var/www/html/app/code/Pstk/Paystack
+      - ..:/var/www/html/app/code/Lomi/Payments
     depends_on:
       - db
       - search

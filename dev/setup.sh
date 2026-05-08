@@ -1,20 +1,18 @@
 #!/bin/bash
 #
-# Paystack Magento 2 — Development Environment Setup
+# lomi. — Magento 2 local development setup
 #
 # Prerequisites:
-#   1. cp .env.example .env   (then fill in your Paystack test keys)
+#   1. cp .env.example .env   (then fill in your lomi. test keys)
 #   2. docker compose up -d   (wait ~3 minutes for Magento to install)
 #   3. bash setup.sh
 #
 set -e
 
-# Prevent Git Bash (MSYS/MinGW) from converting Unix paths to Windows paths
 export MSYS_NO_PATHCONV=1
 
 source .env
 
-# Helper: run magento CLI as www-data to avoid root-owned file permission issues
 mage() {
     docker compose exec --user www-data magento php bin/magento "$@"
 }
@@ -45,8 +43,8 @@ echo "==> Disabling 2FA for local development..."
 mage module:disable Magento_AdminAdobeImsTwoFactorAuth Magento_TwoFactorAuth --clear-static-content
 
 echo ""
-echo "==> Enabling Pstk_Paystack module..."
-mage module:enable Pstk_Paystack --clear-static-content
+echo "==> Enabling Lomi_Payments module..."
+mage module:enable Lomi_Payments --clear-static-content
 
 echo ""
 echo "==> Running setup:upgrade..."
@@ -61,23 +59,21 @@ echo "==> Compiling DI..."
 mage setup:di:compile
 
 echo ""
-echo "==> Configuring Paystack payment method..."
-mage config:set payment/pstk_paystack/active 1
-mage config:set payment/pstk_paystack/test_mode 1
-mage config:set payment/pstk_paystack/test_public_key "$PAYSTACK_TEST_PK"
-mage config:set payment/pstk_paystack/test_secret_key "$PAYSTACK_TEST_SK"
-mage config:set payment/pstk_paystack/integration_type inline
+echo "==> Configuring lomi. payment method..."
+mage config:set payment/lomi/active 1
+mage config:set payment/lomi/test_mode 1
+mage config:set payment/lomi/test_public_key "${LOMI_TEST_PK:-}"
+mage config:set payment/lomi/test_secret_key "${LOMI_TEST_SK:-}"
 
 echo ""
-echo "==> Setting store currency to NGN..."
-mage config:set currency/options/allow NGN,USD,ZAR
-mage config:set currency/options/base NGN
-mage config:set currency/options/default NGN
-mage config:set currency/options/allow NGN
+echo "==> Setting store currency (XOF, USD, EUR supported by gateway)..."
+mage config:set currency/options/allow XOF,USD,EUR
+mage config:set currency/options/base XOF
+mage config:set currency/options/default XOF
 
 echo ""
 echo "==> Creating test products with images..."
-docker compose exec --user www-data magento php app/code/Pstk/Paystack/dev/seed-products.php
+docker compose exec --user www-data magento php app/code/Lomi/Payments/dev/seed-products.php
 
 echo ""
 echo "==> Reindexing..."
@@ -94,10 +90,4 @@ echo ""
 echo "  Storefront:  http://localhost:8080"
 echo "  Admin panel: http://localhost:8080/admin"
 echo "  Admin login: admin / Admin12345!"
-echo ""
-echo "  Test card:   4084 0840 8408 4081"
-echo "  Expiry:      12/30"
-echo "  CVV:         408"
-echo "  PIN:         0000"
-echo "  OTP:         123456"
 echo "============================================"

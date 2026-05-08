@@ -1,7 +1,7 @@
 {
-    "name": "pstk/paystack-magento2-module",
-    "description": "lomi. Magento 2 payment module — hosted checkout via Lomi API checkout sessions. (Historical package name pstk/paystack-magento2-module.)",
-    "version": "4.0.0",
+    "name": "lomi/magento2-payments",
+    "description": "lomi. Magento 2 payment module — hosted checkout via Lomi API checkout sessions.",
+    "version": "5.0.0",
     "require": {},
     "type": "magento2-module",
     "license": [
@@ -19,7 +19,7 @@
             "registration.php"
         ],
         "psr-4": {
-            "Pstk\\Paystack\\": ""
+            "Lomi\\Payments\\": ""
         }
     }
 }

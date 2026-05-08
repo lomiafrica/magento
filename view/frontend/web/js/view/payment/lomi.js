@@ -12,13 +12,11 @@ define(
         'use strict';
         rendererList.push(
             {
-                type: 'pstk_paystack',
-                component: 'Pstk_Paystack/js/view/payment/method-renderer/pstk_paystack-method'
+                type: 'lomi',
+                component: 'Lomi_Payments/js/view/payment/method-renderer/lomi-method'
             }
         );
 
-        /** Add view logic here if needed */
-        
         return Component.extend({});
     }
 );

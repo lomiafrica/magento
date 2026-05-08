@@ -1,11 +1,11 @@
 <?php
 
-namespace Pstk\Paystack\Controller\Payment;
+namespace Lomi\Payments\Controller\Payment;
 
 use Magento\Sales\Model\Order;
-use Pstk\Paystack\Gateway\Exception\ApiException;
+use Lomi\Payments\Gateway\Exception\ApiException;
 
-class Callback extends AbstractPaystackStandard
+class Callback extends AbstractLomiPayment
 {
     /**
      * @return \Magento\Framework\Controller\ResultInterface
@@ -35,7 +35,7 @@ class Callback extends AbstractPaystackStandard
         }
 
         try {
-            $session = $this->paystackClient->fetchCheckoutSession((string) $sessionId);
+            $session = $this->lomiClient->fetchCheckoutSession((string) $sessionId);
             $ok = $this->checkoutSessionVerifier->verifyAndDispatch($order, $session);
             if (!$ok) {
                 return $this->redirectToFinal(false, 'lomi. could not confirm payment for this order.');

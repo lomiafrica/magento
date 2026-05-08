@@ -1,19 +1,19 @@
 <?php
 
-namespace Pstk\Paystack\Model;
+namespace Lomi\Payments\Model;
 
 use Exception;
-use Pstk\Paystack\Api\PaymentManagementInterface;
-use Pstk\Paystack\Gateway\Exception\ApiException;
-use Pstk\Paystack\Gateway\PaystackApiClient;
-use Pstk\Paystack\Model\Payment\Paystack as PaystackModel;
+use Lomi\Payments\Api\PaymentManagementInterface;
+use Lomi\Payments\Gateway\Exception\ApiException;
+use Lomi\Payments\Gateway\LomiApiClient;
+use Lomi\Payments\Model\Payment\Lomi as LomiMethod;
 use Psr\Log\LoggerInterface;
 use Magento\Sales\Model\OrderFactory;
 
 class PaymentManagement implements PaymentManagementInterface
 {
-    /** @var PaystackApiClient */
-    protected $paystackClient;
+    /** @var LomiApiClient */
+    protected $lomiClient;
 
     /** @var CheckoutSessionVerifier */
     private $checkoutSessionVerifier;
@@ -28,13 +28,13 @@ class PaymentManagement implements PaymentManagementInterface
     protected $checkoutSession;
 
     public function __construct(
-        PaystackApiClient $paystackClient,
+        LomiApiClient $lomiClient,
         \Magento\Checkout\Model\Session $checkoutSession,
         CheckoutSessionVerifier $checkoutSessionVerifier,
         LoggerInterface $logger,
         OrderFactory $orderFactory
     ) {
-        $this->paystackClient = $paystackClient;
+        $this->lomiClient = $lomiClient;
         $this->checkoutSession = $checkoutSession;
         $this->checkoutSessionVerifier = $checkoutSessionVerifier;
         $this->logger = $logger;
@@ -60,7 +60,7 @@ class PaymentManagement implements PaymentManagementInterface
                 ]);
             }
 
-            if ($order->getPayment()->getMethod() !== PaystackModel::CODE) {
+            if ($order->getPayment()->getMethod() !== LomiMethod::CODE) {
                 return json_encode([
                     'status' => false,
                     'message' => 'Order does not use lomi. payment method',
@@ -75,7 +75,7 @@ class PaymentManagement implements PaymentManagementInterface
                 ]);
             }
 
-            $session = $this->paystackClient->fetchCheckoutSession($checkoutSessionId);
+            $session = $this->lomiClient->fetchCheckoutSession($checkoutSessionId);
             $ok = $this->checkoutSessionVerifier->verifyAndDispatch($order, $session);
 
             return json_encode([

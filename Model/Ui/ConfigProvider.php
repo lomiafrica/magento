@@ -1,6 +1,6 @@
 <?php
 
-namespace Pstk\Paystack\Model\Ui;
+namespace Lomi\Payments\Model\Ui;
 
 use Magento\Checkout\Model\ConfigProviderInterface;
 use Magento\Payment\Helper\Data as PaymentHelper;
@@ -16,7 +16,7 @@ class ConfigProvider implements ConfigProviderInterface
 
     public function __construct(PaymentHelper $paymentHelper, Store $store)
     {
-        $this->method = $paymentHelper->getMethodInstance(\Pstk\Paystack\Model\Payment\Paystack::CODE);
+        $this->method = $paymentHelper->getMethodInstance(\Lomi\Payments\Model\Payment\Lomi::CODE);
         $this->store = $store;
     }
 
@@ -32,12 +32,12 @@ class ConfigProvider implements ConfigProviderInterface
 
         return [
             'payment' => [
-                \Pstk\Paystack\Model\Payment\Paystack::CODE => [
+                \Lomi\Payments\Model\Payment\Lomi::CODE => [
                     'public_key' => $publicKey,
                     'integration_type' => 'standard',
                     'api_url' => $this->store->getBaseUrl() . 'rest/',
-                    'integration_type_standard_url' => $this->store->getBaseUrl() . 'paystack/payment/setup',
-                    'recreate_quote_url' => $this->store->getBaseUrl() . 'paystack/payment/recreate',
+                    'integration_type_standard_url' => $this->store->getBaseUrl() . 'lomi/payment/setup',
+                    'recreate_quote_url' => $this->store->getBaseUrl() . 'lomi/payment/recreate',
                 ],
             ],
         ];

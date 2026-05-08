@@ -1,6 +1,6 @@
 <?php
 
-namespace Pstk\Paystack\Observer;
+namespace Lomi\Payments\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Sales\Model\Order;
@@ -11,7 +11,7 @@ class ObserverAfterPaymentVerify implements ObserverInterface
      * @var \Magento\Sales\Model\Order\Email\Sender\OrderSender
      */
     protected $orderSender;
-    
+
     public function __construct(
         \Magento\Sales\Model\Order\Email\Sender\OrderSender $orderSender
     ) {
@@ -20,12 +20,10 @@ class ObserverAfterPaymentVerify implements ObserverInterface
 
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-        //Observer execution code...
-        /** @var \Magento\Sales\Model\Order $order **/
-        $order = $observer->getPaystackOrder();
-        
+        /** @var \Magento\Sales\Model\Order $order */
+        $order = $observer->getLomiOrder();
+
         if ($order && in_array($order->getStatus(), ['pending', 'pending_payment'], true)) {
-            // sets the status to processing since payment has been received
             $order->setState(Order::STATE_PROCESSING)
                     ->addStatusToHistory(Order::STATE_PROCESSING, __('lomi. payment verified; order is being processed.'), true)
                     ->setCanSendNewEmailFlag(true)

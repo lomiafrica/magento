@@ -1,11 +1,11 @@
 <?php
 
-namespace Pstk\Paystack\Model;
+namespace Lomi\Payments\Model;
 
 use Magento\Framework\Event\ManagerInterface as EventManager;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
-use Pstk\Paystack\Gateway\PaystackApiClient;
+use Lomi\Payments\Gateway\LomiApiClient;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -13,7 +13,7 @@ use Psr\Log\LoggerInterface;
  */
 class CheckoutSessionVerifier
 {
-    /** @var PaystackApiClient */
+    /** @var LomiApiClient */
     private $apiClient;
 
     /** @var EventManager */
@@ -26,7 +26,7 @@ class CheckoutSessionVerifier
     private $logger;
 
     public function __construct(
-        PaystackApiClient $apiClient,
+        LomiApiClient $apiClient,
         EventManager $eventManager,
         OrderRepositoryInterface $orderRepository,
         LoggerInterface $logger
@@ -73,8 +73,8 @@ class CheckoutSessionVerifier
             return true;
         }
 
-        $this->eventManager->dispatch('paystack_payment_verify_after', [
-            'paystack_order' => $order,
+        $this->eventManager->dispatch('lomi_payment_verify_after', [
+            'lomi_order' => $order,
         ]);
 
         return true;

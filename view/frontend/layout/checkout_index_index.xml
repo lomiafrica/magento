@@ -15,10 +15,10 @@
                                                     <item name="children" xsi:type="array">
                                                         <item name="renders" xsi:type="array">
                                                             <item name="children" xsi:type="array">
-                                                                <item name="pstk_paystack" xsi:type="array">
-                                                                    <item name="component" xsi:type="string">Pstk_Paystack/js/view/payment/pstk_paystack</item>
+                                                                <item name="lomi" xsi:type="array">
+                                                                    <item name="component" xsi:type="string">Lomi_Payments/js/view/payment/lomi</item>
                                                                     <item name="methods" xsi:type="array">
-                                                                        <item name="pstk_paystack" xsi:type="array">
+                                                                        <item name="lomi" xsi:type="array">
                                                                             <item name="isBillingAddressRequired" xsi:type="boolean">true</item>
                                                                         </item>
                                                                     </item>

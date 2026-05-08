@@ -3,19 +3,19 @@
     <type name="Magento\Checkout\Model\CompositeConfigProvider">
         <arguments>
             <argument name="configProviders" xsi:type="array">
-                <item name="pstk_paystack_config_provider" xsi:type="object">Pstk\Paystack\Model\Ui\ConfigProvider</item>
+                <item name="lomi_payments_config_provider" xsi:type="object">Lomi\Payments\Model\Ui\ConfigProvider</item>
             </argument>
         </arguments>
     </type>
     <type name="Magento\Framework\App\Request\CsrfValidator">
-        <plugin name="csrf_validator_skip" type="Pstk\Paystack\Plugin\CsrfValidatorSkip" />
+        <plugin name="lomi_payments_csrf_validator_skip" type="Lomi\Payments\Plugin\CsrfValidatorSkip" />
     </type>
 
     <!-- CSP: register Lomi (checkout/API) domains via PHP collector (frontend only) -->
     <type name="Magento\Csp\Model\CompositePolicyCollector">
         <arguments>
             <argument name="collectors" xsi:type="array">
-                <item name="pstk-paystack-csp" xsi:type="object">Pstk\Paystack\Model\CspPolicyCollector</item>
+                <item name="lomi-payments-csp" xsi:type="object">Lomi\Payments\Model\CspPolicyCollector</item>
             </argument>
         </arguments>
     </type>

@@ -1,6 +1,6 @@
 <?php
 
-namespace Pstk\Paystack\Model;
+namespace Lomi\Payments\Model;
 
 use Magento\Csp\Api\PolicyCollectorInterface;
 use Magento\Csp\Model\Policy\FetchPolicy;
