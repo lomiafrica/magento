@@ -24,7 +24,7 @@ namespace Pstk\Paystack\Controller\Payment;
 
 use Magento\Payment\Helper\Data as PaymentHelper;
 use Pstk\Paystack\Gateway\PaystackApiClient;
-
+use Pstk\Paystack\Model\CheckoutSessionVerifier;
 
 abstract class AbstractPaystackStandard extends \Magento\Framework\App\Action\Action {
 
@@ -37,10 +37,9 @@ abstract class AbstractPaystackStandard extends \Magento\Framework\App\Action\Ac
     protected $orderRepository;
 
     /**
-     *
-     * @var \Magento\Sales\Api\Data\OrderInterface
+     * @var \Magento\Sales\Model\OrderFactory
      */
-    protected $orderInterface;
+    protected $orderFactory;
     protected $checkoutSession;
     protected $method;
     protected $messageManager;
@@ -56,6 +55,11 @@ abstract class AbstractPaystackStandard extends \Magento\Framework\App\Action\Ac
      * @var PaystackApiClient
      */
     protected $paystackClient;
+
+    /**
+     * @var CheckoutSessionVerifier
+     */
+    protected $checkoutSessionVerifier;
 
     /**
      * @var \Magento\Framework\Event\Manager
@@ -84,7 +88,7 @@ abstract class AbstractPaystackStandard extends \Magento\Framework\App\Action\Ac
             \Magento\Framework\App\Action\Context $context,
             \Magento\Framework\View\Result\PageFactory $resultPageFactory,
             \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,
-            \Magento\Sales\Api\Data\OrderInterface $orderInterface,
+            \Magento\Sales\Model\OrderFactory $orderFactory,
             \Magento\Checkout\Model\Session $checkoutSession,
             PaymentHelper $paymentHelper,
             \Magento\Framework\Message\ManagerInterface $messageManager,
@@ -92,11 +96,12 @@ abstract class AbstractPaystackStandard extends \Magento\Framework\App\Action\Ac
             \Magento\Framework\Event\Manager $eventManager,
             \Magento\Framework\App\Request\Http $request,
             \Psr\Log\LoggerInterface $logger,
-            PaystackApiClient $paystackClient
+            PaystackApiClient $paystackClient,
+            CheckoutSessionVerifier $checkoutSessionVerifier
     ) {
         $this->resultPageFactory = $resultPageFactory;
         $this->orderRepository = $orderRepository;
-        $this->orderInterface = $orderInterface;
+        $this->orderFactory = $orderFactory;
         $this->checkoutSession = $checkoutSession;
         $this->method = $paymentHelper->getMethodInstance(\Pstk\Paystack\Model\Payment\Paystack::CODE);
         $this->messageManager = $messageManager;
@@ -105,6 +110,7 @@ abstract class AbstractPaystackStandard extends \Magento\Framework\App\Action\Ac
         $this->request = $request;
         $this->logger = $logger;
         $this->paystackClient = $paystackClient;
+        $this->checkoutSessionVerifier = $checkoutSessionVerifier;
 
         parent::__construct($context);
     }

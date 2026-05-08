@@ -40,8 +40,8 @@ class CsrfValidatorSkip {
         $request,
         $action
     ) {
-        if ("{$request->getModuleName()}/{$request->getActionName()}" == 'paystack/webhook') {
-            return; // Skip CSRF check
+        if ($request->getFullActionName() === 'paystack_payment_webhook') {
+            return; // Skip CSRF check for lomi. webhook
         }
         $proceed($request, $action); // Proceed Magento 2 core functionalities
     }

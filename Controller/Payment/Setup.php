@@ -1,77 +1,80 @@
 <?php
 
-/**
- * Paystack Magento2 Module using \Magento\Payment\Model\Method\AbstractMethod
- * Copyright (C) 2019 Paystack.com
- * 
- * This file is part of Pstk/Paystack.
- * 
- * Pstk/Paystack is free software => you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http =>//www.gnu.org/licenses/>.
- */
-
 namespace Pstk\Paystack\Controller\Payment;
 
-class Setup extends AbstractPaystackStandard {
+use Magento\Sales\Model\Order;
+use Pstk\Paystack\Gateway\Exception\ApiException;
 
+class Setup extends AbstractPaystackStandard
+{
     /**
-     * Execute view action
-     *
      * @return \Magento\Framework\Controller\ResultInterface
      */
-    public function execute() {
-        
+    public function execute()
+    {
         $message = '';
-        $order = $this->orderInterface->loadByIncrementId($this->checkoutSession->getLastRealOrder()->getIncrementId());
+        $order = $this->orderFactory->create()->loadByIncrementId($this->checkoutSession->getLastRealOrder()->getIncrementId());
         if ($order && $this->method->getCode() == $order->getPayment()->getMethod()) {
-
             try {
                 return $this->processAuthorization($order);
-            } catch (\Pstk\Paystack\Gateway\Exception\ApiException $e) {
+            } catch (ApiException $e) {
                 $message = $e->getMessage();
                 $order->addStatusToHistory($order->getStatus(), $message);
                 $this->orderRepository->save($order);
             }
         }
 
-        $this->redirectToFinal(false, $message);
+        return $this->redirectToFinal(false, $message);
     }
 
-    protected function processAuthorization(\Magento\Sales\Model\Order $order) {
-        $tranx = $this->paystackClient->initializeTransaction([
-            'first_name' => $order->getCustomerFirstname(),
-            'last_name' => $order->getCustomerLastname(),
-            'amount' => $order->getGrandTotal() * 100, // in kobo
-            'email' => $order->getCustomerEmail(), // unique to customers
-            'reference' => $order->getIncrementId(), // unique to transactions
-            'currency' => $order->getCurrency(),
-            'callback_url' => $this->configProvider->getStore()->getBaseUrl() . "paystack/payment/callback",
-            'metadata' => array('custom_fields' => array(
-                array(
-                    "display_name"=>"Plugin",
-                    "variable_name"=>"plugin",
-                    "value"=>"magento-2"
-                )
-            )) 
-        ]);
+    /**
+     * @return \Magento\Framework\Controller\Result\Redirect
+     * @throws ApiException
+     */
+    protected function processAuthorization(Order $order)
+    {
+        $store = $this->configProvider->getStore();
+        $baseUrl = $store->getBaseUrl();
 
-        //var_dump($tranx); die();
+        $email = $order->getCustomerEmail();
+        if (!$email && $order->getBillingAddress()) {
+            $email = $order->getBillingAddress()->getEmail();
+        }
+
+        $successUrl = $baseUrl . 'paystack/payment/callback?increment_id=' . rawurlencode($order->getIncrementId())
+            . '&key=' . rawurlencode($order->getProtectCode());
+
+        $cancelUrl = $store->getUrl('checkout/cart');
+
+        $payload = [
+            'currency_code' => strtoupper((string) $order->getOrderCurrencyCode()),
+            'amount' => $this->paystackClient->getOrderAmountMinorUnits($order),
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+            'customer_email' => $email,
+            'customer_name' => trim((string) $order->getCustomerFirstname() . ' ' . (string) $order->getCustomerLastname()),
+            'require_billing_address' => false,
+            'title' => 'Order ' . $order->getIncrementId(),
+            'metadata' => [
+                'magento_increment_id' => $order->getIncrementId(),
+                'quote_id' => (string) $order->getQuoteId(),
+                'plugin' => 'magento-lomi',
+            ],
+        ];
+
+        $data = $this->paystackClient->createCheckoutSession($payload);
+
+        if (empty($data->checkout_url) || empty($data->checkout_session_id)) {
+            throw new ApiException('Lomi did not return checkout_url or checkout_session_id.');
+        }
+
+        $payment = $order->getPayment();
+        $payment->setAdditionalInformation('lomi_checkout_session_id', (string) $data->checkout_session_id);
+        $this->orderRepository->save($order);
 
         $redirectFactory = $this->resultRedirectFactory->create();
-        $redirectFactory->setUrl($tranx->data->authorization_url);
-
+        $redirectFactory->setUrl((string) $data->checkout_url);
 
         return $redirectFactory;
     }
-
 }

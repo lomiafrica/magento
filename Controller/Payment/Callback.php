@@ -1,72 +1,55 @@
 <?php
 
-/**
- * Paystack Magento2 Module using \Magento\Payment\Model\Method\AbstractMethod
- * Copyright (C) 2019 Paystack.com
- * 
- * This file is part of Pstk/Paystack.
- * 
- * Pstk/Paystack is free software => you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http =>//www.gnu.org/licenses/>.
- */
-
 namespace Pstk\Paystack\Controller\Payment;
 
-class Callback extends AbstractPaystackStandard {
+use Magento\Sales\Model\Order;
+use Pstk\Paystack\Gateway\Exception\ApiException;
 
+class Callback extends AbstractPaystackStandard
+{
     /**
-     * Execute view action
-     *
      * @return \Magento\Framework\Controller\ResultInterface
      */
-    public function execute() {
+    public function execute()
+    {
+        $incrementId = $this->request->getParam('increment_id');
+        $key = $this->request->getParam('key');
+        $message = '';
 
-        $reference = $this->request->get('reference');
-        $message = "";
-        
-        if (!$reference) {
-            return $this->redirectToFinal(false, "No reference supplied");
+        if (!$incrementId || !$key) {
+            return $this->redirectToFinal(false, 'Missing return parameters from lomi.');
         }
-        
+
+        $order = $this->orderFactory->create()->loadByIncrementId($incrementId);
+        if (!$order->getId() || $order->getProtectCode() !== $key) {
+            return $this->redirectToFinal(false, 'Invalid order or verification key.');
+        }
+
+        if ($order->getState() === Order::STATE_PROCESSING) {
+            return $this->redirectToFinal(true);
+        }
+
+        $sessionId = $order->getPayment()->getAdditionalInformation('lomi_checkout_session_id');
+        if (!$sessionId) {
+            return $this->redirectToFinal(false, 'No lomi. checkout session linked to this order.');
+        }
+
         try {
-            $transactionDetails = $this->paystackClient->verifyTransaction($reference);
-            
-            $reference = explode('_', $transactionDetails->data->reference, 2);
-            $reference = ($reference[0])?: 0;
-            
-            $order = $this->orderInterface->loadByIncrementId($reference);
-            
-            if ($order && $reference === $order->getIncrementId()) {
-                // dispatch the `payment_verify_after` event to update the order status
-                
-                $this->eventManager->dispatch('paystack_payment_verify_after', [
-                    "paystack_order" => $order,
-                ]);
-
-                return $this->redirectToFinal(true);
+            $session = $this->paystackClient->fetchCheckoutSession((string) $sessionId);
+            $ok = $this->checkoutSessionVerifier->verifyAndDispatch($order, $session);
+            if (!$ok) {
+                return $this->redirectToFinal(false, 'lomi. could not confirm payment for this order.');
             }
-
-            $message = "Invalid reference or order number";
-            
-        } catch (\Pstk\Paystack\Gateway\Exception\ApiException $e) {
+        } catch (ApiException $e) {
             $message = $e->getMessage();
-            
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $message = $e->getMessage();
-            
         }
 
-        return $this->redirectToFinal(false, $message);
-    }
+        if ($message) {
+            return $this->redirectToFinal(false, $message);
+        }
 
+        return $this->redirectToFinal(true);
+    }
 }

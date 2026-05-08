@@ -58,7 +58,7 @@ class Webhook extends \Magento\Config\Block\System\Config\Form\Field
     protected function _getElementHtml(AbstractElement $element)
     {
         $webhookUrl = $this->store->getBaseUrl() . 'paystack/payment/webhook';
-        $value = "You may login to <a target=\"_blank\" href=\"https://dashboard.paystack.co/#/settings/developer\">Paystack Developer Settings</a> to update your Webhook URL to:<br><br>"
+        $value = "Configure this webhook URL in your <a target=\"_blank\" href=\"https://dashboard.lomi.africa\">lomi. dashboard</a> and use the same signing secret as below:<br><br>"
                 . "<strong style='color:red;'>$webhookUrl</strong>";
         
         $element->setValue($webhookUrl);

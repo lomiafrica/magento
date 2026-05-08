@@ -24,10 +24,10 @@ class ObserverAfterPaymentVerify implements ObserverInterface
         /** @var \Magento\Sales\Model\Order $order **/
         $order = $observer->getPaystackOrder();
         
-        if ($order && $order->getStatus() == "pending") {
+        if ($order && in_array($order->getStatus(), ['pending', 'pending_payment'], true)) {
             // sets the status to processing since payment has been received
             $order->setState(Order::STATE_PROCESSING)
-                    ->addStatusToHistory(Order::STATE_PROCESSING, __("Paystack Payment Verified and Order is being processed"), true)
+                    ->addStatusToHistory(Order::STATE_PROCESSING, __('lomi. payment verified; order is being processed.'), true)
                     ->setCanSendNewEmailFlag(true)
                     ->setCustomerNoteNotify(true);
             $order->save();

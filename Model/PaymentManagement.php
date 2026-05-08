@@ -1,140 +1,116 @@
 <?php
-/**
- * Paystack Magento2 Module using \Magento\Payment\Model\Method\AbstractMethod
- * Copyright (C) 2019 Paystack.com
- * 
- * This file is part of Pstk/Paystack.
- * 
- * Pstk/Paystack is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 
 namespace Pstk\Paystack\Model;
 
 use Exception;
+use Pstk\Paystack\Api\PaymentManagementInterface;
+use Pstk\Paystack\Gateway\Exception\ApiException;
 use Pstk\Paystack\Gateway\PaystackApiClient;
+use Pstk\Paystack\Model\Payment\Paystack as PaystackModel;
 use Psr\Log\LoggerInterface;
+use Magento\Sales\Model\OrderFactory;
 
-class PaymentManagement implements \Pstk\Paystack\Api\PaymentManagementInterface
+class PaymentManagement implements PaymentManagementInterface
 {
-
+    /** @var PaystackApiClient */
     protected $paystackClient;
 
-    protected $orderInterface;
-    protected $checkoutSession;
+    /** @var CheckoutSessionVerifier */
+    private $checkoutSessionVerifier;
 
-    /**
-     * @var \Magento\Framework\Event\Manager
-     */
-    private $eventManager;
-
-    /**
-     * @var LoggerInterface
-     */
+    /** @var LoggerInterface */
     private $logger;
+
+    /** @var OrderFactory */
+    private $orderFactory;
+
+    /** @var \Magento\Checkout\Model\Session */
+    protected $checkoutSession;
 
     public function __construct(
         PaystackApiClient $paystackClient,
-        \Magento\Framework\Event\Manager $eventManager,
-        \Magento\Sales\Api\Data\OrderInterface $orderInterface,
         \Magento\Checkout\Model\Session $checkoutSession,
-        LoggerInterface $logger
+        CheckoutSessionVerifier $checkoutSessionVerifier,
+        LoggerInterface $logger,
+        OrderFactory $orderFactory
     ) {
         $this->paystackClient = $paystackClient;
-        $this->eventManager = $eventManager;
-        $this->orderInterface = $orderInterface;
         $this->checkoutSession = $checkoutSession;
+        $this->checkoutSessionVerifier = $checkoutSessionVerifier;
         $this->logger = $logger;
+        $this->orderFactory = $orderFactory;
     }
 
     /**
-     * @param string $reference
-     * @return string
+     * Verify payment for the last order using a lomi. checkout session id.
+     *
+     * @param string $checkoutSessionId
+     * @return string JSON
      */
-    public function verifyPayment($reference)
+    public function verifyPayment($checkoutSessionId)
     {
-        
-        // we are appending quoteid
-        $ref = explode('_-~-_', $reference);
-        $reference = $ref[0];
-        $quoteId = $ref[1];
-        
-        $this->logger->info('Paystack: verifyPayment called', ['reference' => $reference, 'quoteId' => $quoteId]);
+        $this->logger->info('lomi.: verifyPayment REST called', ['checkout_session_id' => $checkoutSessionId]);
 
         try {
-            $transaction_details = $this->paystackClient->verifyTransaction($reference);
-            $this->logger->info('Paystack: transaction verified via API', [
-                'tx_status' => $transaction_details->data->status ?? 'unknown',
-                'tx_quoteId' => $transaction_details->data->metadata->quoteId ?? 'missing',
-            ]);
-
             $order = $this->getOrder();
-            $this->logger->info('Paystack: getOrder result', [
-                'order_found' => $order ? 'yes' : 'no',
-                'order_quoteId' => $order ? $order->getQuoteId() : 'N/A',
-                'url_quoteId' => $quoteId,
-                'tx_meta_quoteId' => $transaction_details->data->metadata->quoteId ?? 'missing',
-            ]);
-
-            if ($order && (string)$order->getQuoteId() === (string)$quoteId && (string)$transaction_details->data->metadata->quoteId === (string)$quoteId) {
-
-                // dispatch the `paystack_payment_verify_after` event to update the order status
-                $this->eventManager->dispatch('paystack_payment_verify_after', [
-                    "paystack_order" => $order,
-                ]);
-
-                $this->logger->info('Paystack: verification successful, event dispatched');
-
-                // Return consistent response format
+            if (!$order || !$order->getId()) {
                 return json_encode([
-                    'status' => true,
-                    'message' => 'Verification successful',
-                    'data' => $transaction_details->data
+                    'status' => false,
+                    'message' => 'No order found in checkout session',
                 ]);
             }
-            $this->logger->warning('Paystack: quoteId mismatch — order not updated');
-        } catch (Exception $e) {
-            $this->logger->error('Paystack: verifyPayment exception', ['error' => $e->getMessage()]);
+
+            if ($order->getPayment()->getMethod() !== PaystackModel::CODE) {
+                return json_encode([
+                    'status' => false,
+                    'message' => 'Order does not use lomi. payment method',
+                ]);
+            }
+
+            $stored = (string) $order->getPayment()->getAdditionalInformation('lomi_checkout_session_id');
+            if ($stored === '' || $stored !== $checkoutSessionId) {
+                return json_encode([
+                    'status' => false,
+                    'message' => 'Checkout session id does not match order',
+                ]);
+            }
+
+            $session = $this->paystackClient->fetchCheckoutSession($checkoutSessionId);
+            $ok = $this->checkoutSessionVerifier->verifyAndDispatch($order, $session);
+
+            return json_encode([
+                'status' => $ok,
+                'message' => $ok ? 'Verification successful' : 'Verification failed or order on hold',
+            ]);
+        } catch (ApiException $e) {
+            $this->logger->error('lomi.: verifyPayment API error', ['error' => $e->getMessage()]);
             return json_encode([
                 'status' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+            ]);
+        } catch (Exception $e) {
+            $this->logger->error('lomi.: verifyPayment exception', ['error' => $e->getMessage()]);
+            return json_encode([
+                'status' => false,
+                'message' => $e->getMessage(),
             ]);
         }
-        return json_encode([
-            'status' => false,
-            'message' => "quoteId doesn't match transaction"
-        ]);
     }
 
     /**
-     * Loads the order based on the last real order
-     * @return boolean
+     * @return \Magento\Sales\Model\Order|false
      */
     private function getOrder()
     {
-        // get the last real order id
         $lastOrder = $this->checkoutSession->getLastRealOrder();
-        if($lastOrder){
-            $lastOrderId = $lastOrder->getIncrementId();
-        } else {
+        if (!$lastOrder) {
             return false;
         }
-        
-        if ($lastOrderId) {
-            // load and return the order instance
-            return $this->orderInterface->loadByIncrementId($lastOrderId);
+        $lastOrderId = $lastOrder->getIncrementId();
+        if (!$lastOrderId) {
+            return false;
         }
-        return false;
+        $order = $this->orderFactory->create()->loadByIncrementId($lastOrderId);
+        return $order->getId() ? $order : false;
     }
-
 }

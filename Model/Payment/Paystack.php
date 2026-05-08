@@ -37,6 +37,16 @@ class Paystack extends \Magento\Payment\Model\Method\AbstractMethod
     public function isAvailable(
         ?\Magento\Quote\Api\Data\CartInterface $quote = null
     ) {
-        return parent::isAvailable($quote);
+        if (!parent::isAvailable($quote)) {
+            return false;
+        }
+        if ($quote && $quote->getCurrency()) {
+            $code = strtoupper((string) $quote->getCurrency()->getQuoteCurrencyCode());
+            $allowed = ['XOF', 'USD', 'EUR'];
+            if (!in_array($code, $allowed, true)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

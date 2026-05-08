@@ -2,125 +2,160 @@
 
 namespace Pstk\Paystack\Gateway;
 
+use Magento\Directory\Model\CurrencyFactory;
 use Magento\Payment\Helper\Data as PaymentHelper;
+use Magento\Sales\Model\Order;
 use Pstk\Paystack\Gateway\Exception\ApiException;
 use Pstk\Paystack\Model\Payment\Paystack as PaystackModel;
 
+/**
+ * Lomi API HTTP client (checkout sessions).
+ */
 class PaystackApiClient
 {
-    private const BASE_URL = 'https://api.paystack.co';
-
     /** @var string */
     private $secretKey;
 
-    public function __construct(PaymentHelper $paymentHelper)
-    {
+    /** @var string */
+    private $webhookSecret;
+
+    /** @var bool */
+    private $testMode;
+
+    /** @var CurrencyFactory */
+    private $currencyFactory;
+
+    public function __construct(
+        PaymentHelper $paymentHelper,
+        CurrencyFactory $currencyFactory
+    ) {
+        $this->currencyFactory = $currencyFactory;
         $method = $paymentHelper->getMethodInstance(PaystackModel::CODE);
-        $this->secretKey = $method->getConfigData('live_secret_key');
-        if ($method->getConfigData('test_mode')) {
-            $this->secretKey = $method->getConfigData('test_secret_key');
+        $this->testMode = (bool) $method->getConfigData('test_mode');
+        $this->secretKey = (string) ($this->testMode
+            ? $method->getConfigData('test_secret_key')
+            : $method->getConfigData('live_secret_key'));
+        $this->webhookSecret = (string) ($this->testMode
+            ? $method->getConfigData('test_webhook_secret')
+            : $method->getConfigData('live_webhook_secret'));
+    }
+
+    /**
+     * Minor units for order grand total (API amount).
+     */
+    public function getOrderAmountMinorUnits(Order $order): int
+    {
+        $code = $order->getOrderCurrencyCode();
+        $currency = $this->currencyFactory->create()->load($code);
+        $precision = 2;
+        if (method_exists($currency, 'getPrecision')) {
+            $precision = (int) $currency->getPrecision();
         }
+
+        return (int) round((float) $order->getGrandTotal() * (10 ** $precision));
+    }
+
+    private function getBaseUrl(): string
+    {
+        return $this->testMode
+            ? 'https://sandbox.api.lomi.africa/v1'
+            : 'https://api.lomi.africa/v1';
     }
 
     /**
-     * Initialize a transaction (Standard/Redirect flow).
-     *
-     * @param array $params
-     * @return object Decoded JSON response with ->data->authorization_url
+     * @param array<string,mixed> $params Request body
+     * @return object Normalized checkout session object
      * @throws ApiException
      */
-    public function initializeTransaction(array $params): object
+    public function createCheckoutSession(array $params): object
     {
-        return $this->request('POST', '/transaction/initialize', $params);
+        return $this->request('POST', '/checkout-sessions', $params);
     }
 
     /**
-     * Verify a transaction by reference.
-     *
-     * @param string $reference
-     * @return object Decoded JSON response with ->data (reference, status, metadata, etc.)
      * @throws ApiException
      */
-    public function verifyTransaction(string $reference): object
+    public function fetchCheckoutSession(string $sessionId): object
     {
-        return $this->request('GET', '/transaction/verify/' . rawurlencode($reference));
+        return $this->request('GET', '/checkout-sessions/' . rawurlencode($sessionId), null);
     }
 
     /**
-     * Validate a Paystack webhook signature (HMAC-SHA512).
-     *
-     * @param string $rawBody   Raw request body from php://input
-     * @param string $signature Value of the X-Paystack-Signature header
-     * @return bool
+     * Lomi webhook: HMAC-SHA256 over raw body.
      */
     public function validateWebhookSignature(string $rawBody, string $signature): bool
     {
-        $computed = hash_hmac('sha512', $rawBody, $this->secretKey);
+        if ($signature === '' || $this->webhookSecret === '') {
+            return false;
+        }
+        $computed = hash_hmac('sha256', $rawBody, $this->webhookSecret);
+
         return hash_equals($computed, $signature);
     }
 
     /**
-     * Log a successful transaction to the Paystack plugin tracker.
-     *
-     * @param string $transactionReference
-     * @param string $publicKey
-     * @return void
+     * @deprecated Legacy Paystack transaction flow — removed.
+     * @throws ApiException
      */
-    public function logTransactionSuccess(string $transactionReference, string $publicKey): void
+    public function initializeTransaction(array $params): object
     {
-        $url = 'https://plugin-tracker.paystackintegrations.com/log/charge_success';
-
-        $fields = http_build_query([
-            'plugin_name' => 'magento-2',
-            'transaction_reference' => $transactionReference,
-            'public_key' => $publicKey,
-        ]);
-
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $fields,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 5,
-        ]);
-        curl_exec($ch);
-        curl_close($ch);
+        throw new ApiException('Paystack transaction initialize is not supported. Use Lomi checkout sessions.');
     }
 
     /**
-     * @param string     $method  HTTP method (GET or POST)
-     * @param string     $endpoint API path (e.g. /transaction/verify/ref)
-     * @param array|null $data     POST body data (will be JSON-encoded)
-     * @return object Decoded JSON response body
+     * @deprecated Legacy Paystack verify — removed.
      * @throws ApiException
      */
-    private function request(string $method, string $endpoint, ?array $data = null): object
+    public function verifyTransaction(string $reference): object
     {
-        $url = self::BASE_URL . $endpoint;
+        throw new ApiException('Paystack transaction verify is not supported. Use fetchCheckoutSession.');
+    }
+
+    public function logTransactionSuccess(string $transactionReference, string $publicKey): void
+    {
+        // Intentionally empty — hosted Lomi checkout; no third-party tracker.
+    }
+
+    /**
+     * @return object Single session DTO (unwraps data if present)
+     * @throws ApiException
+     */
+    private function request(string $method, string $endpoint, ?array $data): object
+    {
+        if ($this->secretKey === '') {
+            throw new ApiException('Lomi API secret key is not configured.');
+        }
+
+        $url = $this->getBaseUrl() . $endpoint;
 
         $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . $this->secretKey,
-                'Content-Type: application/json',
-            ],
-            CURLOPT_TIMEOUT => 30,
-        ]);
+        $headers = [
+            'X-API-Key: ' . $this->secretKey,
+            'Accept: application/json',
+        ];
 
-        if ($method === 'POST' && $data !== null) {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+
+        if ($method === 'GET') {
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+        } else {
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+            if ($method === 'POST' && $data !== null) {
+                $headers[] = 'Content-Type: application/json';
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            }
         }
+
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         $response = curl_exec($ch);
 
         if (curl_errno($ch)) {
             $error = curl_error($ch);
             curl_close($ch);
-            throw new ApiException('Paystack API request failed: ' . $error);
+            throw new ApiException('Lomi API request failed: ' . $error);
         }
 
         $statusCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -128,15 +163,24 @@ class PaystackApiClient
 
         $body = json_decode($response);
 
-        if (!$body) {
-            throw new ApiException('Invalid JSON response from Paystack API', $statusCode);
+        if (!$body || !is_object($body)) {
+            throw new ApiException('Invalid JSON response from Lomi API', $statusCode);
         }
 
-        if ($statusCode >= 400 || (isset($body->status) && !$body->status)) {
-            $message = $body->message ?? 'Paystack API request failed';
+        if ($statusCode >= 400) {
+            $message = isset($body->message) ? (string) $body->message : 'Lomi API request failed';
             throw new ApiException($message, $statusCode);
         }
 
-        return $body;
+        return $this->normalizePayload($body);
+    }
+
+    private function normalizePayload(object $json): object
+    {
+        if (isset($json->data) && is_object($json->data)) {
+            return $json->data;
+        }
+
+        return $json;
     }
 }
