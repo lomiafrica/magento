@@ -1,0 +1,18 @@
+# IDEs
+.project
+.pydevproject
+.idea
+.settings
+
+# Composer
+composer.phar
+/vendor/
+
+# Random files
+*~
+\#*
+/nbproject/
+
+# Environment
+.env
+dev/.env

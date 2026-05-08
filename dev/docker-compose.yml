@@ -1,0 +1,41 @@
+name: paystack-magento
+
+services:
+  db:
+    container_name: paystack-db
+    image: mariadb:10.6
+    environment:
+      MARIADB_ROOT_PASSWORD: magento
+      MARIADB_DATABASE: magento
+      MARIADB_USER: magento
+      MARIADB_PASSWORD: magento
+    volumes:
+      - db_data:/var/lib/mysql
+
+  search:
+    container_name: paystack-search
+    image: opensearchproject/opensearch:2.19.1
+    environment:
+      - discovery.type=single-node
+      - "OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m"
+      - DISABLE_SECURITY_PLUGIN=true
+    volumes:
+      - search_data:/usr/share/opensearch/data
+
+  magento:
+    container_name: paystack-magento
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - PAYSTACK_TEST_PK=${PAYSTACK_TEST_PK}
+      - PAYSTACK_TEST_SK=${PAYSTACK_TEST_SK}
+    volumes:
+      - ..:/var/www/html/app/code/Pstk/Paystack
+    depends_on:
+      - db
+      - search
+
+volumes:
+  db_data:
+  search_data:
