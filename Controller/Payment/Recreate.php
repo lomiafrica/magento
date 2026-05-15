@@ -9,7 +9,7 @@ class Recreate extends AbstractLomiPayment
     public function execute()
     {
         $order = $this->checkoutSession->getLastRealOrder();
-        if ($order->getId() && $order->getState() != Order::STATE_CANCELED) {
+        if ($order->getId() && $order->getState() != Order::STATE_CANCELLED) {
             $order->registerCancellation('Payment failed or cancelled')->save();
         }
 
