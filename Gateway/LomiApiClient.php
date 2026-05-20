@@ -58,8 +58,8 @@ class LomiApiClient
     private function getBaseUrl(): string
     {
         return $this->testMode
-            ? 'https://sandbox.api.lomi.africa/v1'
-            : 'https://api.lomi.africa/v1';
+            ? 'https://sandbox.api.lomi.africa'
+            : 'https://api.lomi.africa';
     }
 
     /**
