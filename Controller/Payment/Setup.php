@@ -49,6 +49,7 @@ class Setup extends AbstractLomiPayment
         $payload = [
             'currency_code' => strtoupper((string) $order->getOrderCurrencyCode()),
             'amount' => $this->lomiClient->getOrderAmountMinorUnits($order),
+            'integration_source' => 'magento',
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
             'customer_email' => $email,

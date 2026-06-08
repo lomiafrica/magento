@@ -94,29 +94,6 @@ class LomiApiClient
     }
 
     /**
-     * @deprecated Removed — use Lomi checkout sessions only.
-     * @throws ApiException
-     */
-    public function initializeTransaction(array $params): object
-    {
-        throw new ApiException('Direct transaction initialize is not supported. Use Lomi checkout sessions.');
-    }
-
-    /**
-     * @deprecated Removed — use fetchCheckoutSession.
-     * @throws ApiException
-     */
-    public function verifyTransaction(string $reference): object
-    {
-        throw new ApiException('Direct transaction verify is not supported. Use fetchCheckoutSession.');
-    }
-
-    public function logTransactionSuccess(string $transactionReference, string $publicKey): void
-    {
-        // Intentionally empty — hosted Lomi checkout; no third-party tracker.
-    }
-
-    /**
      * @return object Single session DTO (unwraps data if present)
      * @throws ApiException
      */

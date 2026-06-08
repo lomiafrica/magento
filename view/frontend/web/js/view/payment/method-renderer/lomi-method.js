@@ -42,7 +42,7 @@ define(
             afterPlaceOrder: function () {
                 var checkoutConfig = window.checkoutConfig;
                 var lomiConfiguration = checkoutConfig.payment.lomi;
-                this.redirectToCustomAction(lomiConfiguration.integration_type_standard_url);
+                this.redirectToCustomAction(lomiConfiguration.setup_url);
             }
         });
     }
