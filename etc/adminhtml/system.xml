@@ -7,7 +7,11 @@
                 <comment>
                     <![CDATA[<a href="https://lomi.africa" target="_blank">lomi.</a> hosted checkout. API keys and webhook signing secrets come from <a href="https://dashboard.lomi.africa" target="_blank">dashboard.lomi.africa</a>.]]>
                 </comment>
-                <field id="default_webhook" translate="label comment" type="label" sortOrder="0" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="setup_health" translate="label" type="label" sortOrder="0" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Setup health</label>
+                    <frontend_model>Lomi\Payments\Block\System\Config\Form\Field\SetupHealth</frontend_model>
+                </field>
+                <field id="default_webhook" translate="label comment" type="label" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Webhook URL</label>
                     <frontend_model>Lomi\Payments\Block\System\Config\Form\Field\Webhook</frontend_model>
                 </field>

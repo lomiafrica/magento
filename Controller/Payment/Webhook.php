@@ -66,7 +66,7 @@ class Webhook extends AbstractLomiPayment
             $event = $this->request->getHeader('X-Lomi-Event') ?: '';
             $this->logger->info('lomi. webhook: event = ' . $event);
 
-            if ($event !== 'PAYMENT_SUCCEEDED') {
+            if ($event !== 'PAYMENT_SUCCEEDED' && $event !== 'REFUND_COMPLETED') {
                 $resultFactory->setHttpResponseCode(200);
                 $resultFactory->setContents('ignored');
                 return $resultFactory;
@@ -80,6 +80,14 @@ class Webhook extends AbstractLomiPayment
             }
 
             $data = $payload->data;
+
+            if ($event === 'REFUND_COMPLETED') {
+                $this->handleRefundCompletedWebhook($data);
+                $resultFactory->setHttpResponseCode(200);
+                $resultFactory->setContents('success');
+                return $resultFactory;
+            }
+
             $incrementId = isset($data->metadata->magento_increment_id) ? (string) $data->metadata->magento_increment_id : '';
             $sessionId = isset($data->checkout_session_id) ? (string) $data->checkout_session_id : '';
 
@@ -146,5 +154,53 @@ class Webhook extends AbstractLomiPayment
         $resultFactory->setHttpResponseCode(200);
         $resultFactory->setContents($finalMessage);
         return $resultFactory;
+    }
+
+    /**
+     * Record dashboard-initiated refunds on the Magento order.
+     *
+     * @param object $data
+     * @return void
+     */
+    private function handleRefundCompletedWebhook($data)
+    {
+        $incrementId = isset($data->metadata->magento_increment_id) ? (string) $data->metadata->magento_increment_id : '';
+        $sessionId = isset($data->checkout_session_id) ? (string) $data->checkout_session_id : '';
+        $refundId = isset($data->refund_id) ? (string) $data->refund_id : '';
+
+        $order = null;
+        if ($incrementId !== '') {
+            $order = $this->orderFactory->create()->loadByIncrementId($incrementId);
+        }
+
+        if ((!$order || !$order->getId()) && $sessionId !== '') {
+            $resolvedIncrementId = $this->orderByCheckoutSession->findIncrementIdByCheckoutSessionId($sessionId);
+            if ($resolvedIncrementId !== null && $resolvedIncrementId !== '') {
+                $order = $this->orderFactory->create()->loadByIncrementId($resolvedIncrementId);
+            }
+        }
+
+        if (!$order || !$order->getId()) {
+            $this->logger->warning('lomi. webhook: refund order not found', [
+                'increment_id' => $incrementId,
+                'checkout_session_id' => $sessionId,
+            ]);
+            return;
+        }
+
+        $noteKey = $refundId !== '' ? 'lomi_refund_note_' . $refundId : 'lomi_refund_note_generic';
+        if ($order->getPayment() && $order->getPayment()->getAdditionalInformation($noteKey)) {
+            return;
+        }
+
+        $message = $refundId !== ''
+            ? __('lomi. refund completed (refund %1). Initiated outside Magento if no matching credit memo exists.', $refundId)
+            : __('lomi. refund completed. Initiated outside Magento if no matching credit memo exists.');
+
+        $order->addCommentToStatusHistory((string) $message);
+        if ($order->getPayment()) {
+            $order->getPayment()->setAdditionalInformation($noteKey, '1');
+        }
+        $this->orderRepository->save($order);
     }
 }

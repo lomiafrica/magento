@@ -40,8 +40,9 @@ class Webhook extends \Magento\Config\Block\System\Config\Form\Field
         $html .= '<p><strong>' . __('Webhook URL for your store:') . '</strong></p>';
         $html .= '<p><code>' . $this->escapeHtml($webhookUrl) . '</code></p>';
         $html .= '<p>' . __(
-            'Create a webhook in the lomi. dashboard (Developers → Webhooks) with this URL. Subscribe at least to %1.',
-            '<code>PAYMENT_SUCCEEDED</code>'
+            'Create a webhook in the lomi. dashboard (Developers → Webhooks) with this URL. Subscribe at least to %1 and %2.',
+            '<code>PAYMENT_SUCCEEDED</code>',
+            '<code>REFUND_COMPLETED</code>'
         ) . '</p>';
         $html .= '<p>' . __(
             'Open the dashboard: %1',

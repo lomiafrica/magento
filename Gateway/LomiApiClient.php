@@ -125,6 +125,17 @@ class LomiApiClient
     }
 
     /**
+     * Verify API credentials (GET /me).
+     *
+     * @return object
+     * @throws ApiException
+     */
+    public function testConnection(): object
+    {
+        return $this->request('GET', '/me', null);
+    }
+
+    /**
      * Lomi webhook: HMAC-SHA256 over raw body.
      */
     public function validateWebhookSignature(string $rawBody, string $signature): bool
