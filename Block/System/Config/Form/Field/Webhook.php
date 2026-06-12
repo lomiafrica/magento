@@ -29,14 +29,22 @@ class Webhook extends \Magento\Config\Block\System\Config\Form\Field
      */
     protected function _getElementHtml(AbstractElement $element)
     {
-        $webhookUrl = $this->storeManager->getStore()->getBaseUrl() . 'lomi/payment/webhook';
+        $store = $this->storeManager->getStore();
+        $webhookUrl = $store->getBaseUrl(
+            \Magento\Framework\UrlInterface::URL_TYPE_LINK,
+            true
+        ) . 'lomi/payment/webhook';
         $dashboardUrl = 'https://dashboard.lomi.africa';
 
         $html = '<div class="lomi-webhook-hint">';
         $html .= '<p><strong>' . __('Webhook URL for your store:') . '</strong></p>';
         $html .= '<p><code>' . $this->escapeHtml($webhookUrl) . '</code></p>';
         $html .= '<p>' . __(
-            'Add this URL in the lomi. dashboard under webhook settings: %1',
+            'Create a webhook in the lomi. dashboard (Developers → Webhooks) with this URL. Subscribe at least to %1.',
+            '<code>PAYMENT_SUCCEEDED</code>'
+        ) . '</p>';
+        $html .= '<p>' . __(
+            'Open the dashboard: %1',
             '<a href="' . $this->escapeUrl($dashboardUrl) . '" target="_blank" rel="noopener">' . $this->escapeHtml($dashboardUrl) . '</a>'
         ) . '</p>';
         $html .= '</div>';

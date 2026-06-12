@@ -10,6 +10,7 @@ if [ ! -f /var/www/html/app/etc/env.php ]; then
 
     su -s /bin/bash www-data -c "/var/www/html/bin/magento setup:install \
         --base-url=http://localhost:8080/ \
+        --backend-frontname=admin \
         --db-host=db \
         --db-name=magento \
         --db-user=magento \

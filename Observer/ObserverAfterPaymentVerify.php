@@ -7,15 +7,18 @@ use Magento\Sales\Model\Order;
 
 class ObserverAfterPaymentVerify implements ObserverInterface
 {
-    /**
-     * @var \Magento\Sales\Model\Order\Email\Sender\OrderSender
-     */
+    /** @var \Magento\Sales\Model\Order\Email\Sender\OrderSender */
     protected $orderSender;
 
+    /** @var \Magento\Sales\Api\OrderRepositoryInterface */
+    private $orderRepository;
+
     public function __construct(
-        \Magento\Sales\Model\Order\Email\Sender\OrderSender $orderSender
+        \Magento\Sales\Model\Order\Email\Sender\OrderSender $orderSender,
+        \Magento\Sales\Api\OrderRepositoryInterface $orderRepository
     ) {
         $this->orderSender = $orderSender;
+        $this->orderRepository = $orderRepository;
     }
 
     public function execute(\Magento\Framework\Event\Observer $observer)
@@ -28,7 +31,7 @@ class ObserverAfterPaymentVerify implements ObserverInterface
                     ->addStatusToHistory(Order::STATE_PROCESSING, __('lomi. payment verified; order is being processed.'), true)
                     ->setCanSendNewEmailFlag(true)
                     ->setCustomerNoteNotify(true);
-            $order->save();
+            $this->orderRepository->save($order);
 
             try {
                 $this->orderSender->send($order, true);

@@ -2,22 +2,24 @@
     "name": "lomi/magento2-payments",
     "description": "lomi. Magento 2 payment module — hosted checkout via Lomi API checkout sessions.",
     "version": "5.0.0",
-    "require": {},
     "type": "magento2-module",
-    "license": [
-        "MIT"
-    ],
+    "license": ["MIT"],
     "authors": [
         {
-            "email": "kielsoft@gmail.com",
-            "name": "Olayode Ezekiel"
+            "name": "lomi.",
+            "email": "support@lomi.africa",
+            "homepage": "https://lomi.africa"
         }
     ],
-    "minimum-stability": "dev",
+    "require": {
+        "php": "^7.4 || ^8.0 || ^8.1 || ^8.2 || ^8.3",
+        "magento/framework": "*",
+        "magento/module-sales": "*",
+        "magento/module-payment": "*",
+        "magento/module-checkout": "*"
+    },
     "autoload": {
-        "files": [
-            "registration.php"
-        ],
+        "files": ["registration.php"],
         "psr-4": {
             "Lomi\\Payments\\": ""
         }

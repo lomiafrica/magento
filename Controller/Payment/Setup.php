@@ -44,7 +44,8 @@ class Setup extends AbstractLomiPayment
         $successUrl = $baseUrl . 'lomi/payment/callback?increment_id=' . rawurlencode($order->getIncrementId())
             . '&key=' . rawurlencode($order->getProtectCode());
 
-        $cancelUrl = $store->getUrl('checkout/cart');
+        $cancelUrl = $baseUrl . 'lomi/payment/recreate?increment_id=' . rawurlencode($order->getIncrementId())
+            . '&key=' . rawurlencode($order->getProtectCode());
 
         $payload = [
             'currency_code' => strtoupper((string) $order->getOrderCurrencyCode()),

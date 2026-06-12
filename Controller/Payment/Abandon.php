@@ -3,8 +3,9 @@
 namespace Lomi\Payments\Controller\Payment;
 
 use Lomi\Payments\Model\OrderAbandonService;
+use Magento\Framework\Controller\ResultFactory;
 
-class Recreate extends AbstractLomiPayment
+class Abandon extends AbstractLomiPayment
 {
     /** @var OrderAbandonService */
     private $orderAbandonService;
@@ -44,24 +45,19 @@ class Recreate extends AbstractLomiPayment
     }
 
     /**
-     * Hosted checkout cancel URL — cancel pending order and restore quote.
+     * Browser returned to checkout without completing hosted payment.
      *
      * @return \Magento\Framework\Controller\ResultInterface
      */
     public function execute()
     {
-        $incrementId = (string) $this->request->getParam('increment_id');
-        $protectCode = (string) $this->request->getParam('key');
-
-        $order = $this->orderAbandonService->resolvePendingOrder(
-            $incrementId !== '' ? $incrementId : null,
-            $protectCode !== '' ? $protectCode : null
-        );
+        $order = $this->orderAbandonService->resolvePendingOrder(null, null);
+        $abandoned = false;
 
         if ($order) {
             $abandoned = $this->orderAbandonService->abandon(
                 $order,
-                'lomi.: customer cancelled hosted checkout.'
+                'lomi.: customer left hosted checkout before completing payment.'
             );
 
             if ($abandoned) {
@@ -71,6 +67,13 @@ class Recreate extends AbstractLomiPayment
             }
         }
 
-        return $this->_redirect('checkout', ['_fragment' => 'payment']);
+        /** @var \Magento\Framework\Controller\Result\Json $result */
+        $result = $this->resultFactory->create(ResultFactory::TYPE_JSON);
+        $result->setData([
+            'success' => true,
+            'abandoned' => $abandoned,
+        ]);
+
+        return $result;
     }
 }

@@ -1,0 +1,80 @@
+.wc-lomi-checkout-branding {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: 360px;
+	padding: 12px 14px;
+	border: 1px solid #e2e8f0;
+	border-radius: 10px;
+	gap: 10px;
+}
+
+.payment-method-title .label .wc-lomi-checkout-branding {
+	display: flex;
+	overflow: visible;
+}
+
+.wc-lomi-checkout-branding__header {
+	display: flex;
+	align-items: center;
+}
+
+.wc-lomi-checkout-branding__title {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 22px;
+	color: #0c1e3d;
+}
+
+.wc-lomi-checkout-branding__title strong {
+	font-weight: 700;
+}
+
+.wc-lomi-pay-with-image,
+.wc-lomi-checkout-branding__badge img {
+	display: block;
+	height: 22px;
+	width: auto;
+	margin: 0;
+	padding: 0;
+	object-fit: contain;
+	flex-shrink: 0;
+}
+
+.wc-lomi-checkout-branding__methods {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin-top: 10px;
+}
+
+.wc-lomi-checkout-branding__method {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: 40px;
+	height: 40px;
+	flex-shrink: 0;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.wc-lomi-checkout-branding__method img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	border-radius: 6px;
+}
+
+.wc-lomi-checkout-branding__method--wide {
+	width: 56px;
+}
+
+.payment-method._active .payment-method-title .wc-lomi-checkout-branding {
+	margin-top: 4px;
+}

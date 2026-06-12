@@ -28,7 +28,6 @@ services:
     ports:
       - "8080:80"
     environment:
-      - LOMI_TEST_PK=${LOMI_TEST_PK}
       - LOMI_TEST_SK=${LOMI_TEST_SK}
     volumes:
       - ..:/var/www/html/app/code/Lomi/Payments

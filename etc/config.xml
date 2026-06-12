@@ -3,7 +3,7 @@
     <default>
         <payment>
             <lomi>
-                <debug>1</debug>
+                <debug>0</debug>
                 <active>0</active>
                 <test_mode>1</test_mode>
                 <model>Lomi\Payments\Model\Payment\Lomi</model>

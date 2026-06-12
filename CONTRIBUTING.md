@@ -15,5 +15,9 @@ Thanks for helping improve the lomi. Magento integration.
 
 ## Resources
 
+- [README](README.md) — installation and configuration
+- [Guide français](docs/GUIDE.fr.md) — guide marchand
+- [dev/README.md](dev/README.md) — local Docker setup
 - [lomi.africa](https://lomi.africa)
 - [lomi. dashboard](https://dashboard.lomi.africa)
+- [lomi. docs](https://docs.lomi.africa)

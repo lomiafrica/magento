@@ -62,8 +62,16 @@ echo ""
 echo "==> Configuring lomi. payment method..."
 mage config:set payment/lomi/active 1
 mage config:set payment/lomi/test_mode 1
-mage config:set payment/lomi/test_public_key "${LOMI_TEST_PK:-}"
-mage config:set payment/lomi/test_secret_key "${LOMI_TEST_SK:-}"
+if [ -z "${LOMI_TEST_SK:-}" ]; then
+    echo "    WARNING: LOMI_TEST_SK is empty in dev/.env — set your test secret key (sk_test_...)."
+else
+    mage config:set payment/lomi/test_secret_key "${LOMI_TEST_SK}"
+fi
+if [ -z "${LOMI_TEST_WEBHOOK_SECRET:-}" ]; then
+    echo "    WARNING: LOMI_TEST_WEBHOOK_SECRET is empty in dev/.env — paste whsec_... from dashboard webhooks."
+else
+    mage config:set payment/lomi/test_webhook_secret "${LOMI_TEST_WEBHOOK_SECRET}"
+fi
 
 echo ""
 echo "==> Setting store currency (XOF, USD, EUR supported by gateway)..."
@@ -74,6 +82,10 @@ mage config:set currency/options/default XOF
 echo ""
 echo "==> Creating test products with images..."
 docker compose exec --user www-data magento php app/code/Lomi/Payments/dev/seed-products.php
+
+echo ""
+echo "==> Deploying storefront static assets (branding images + checkout template)..."
+mage setup:static-content:deploy -f en_US
 
 echo ""
 echo "==> Reindexing..."

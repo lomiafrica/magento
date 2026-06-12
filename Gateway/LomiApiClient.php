@@ -3,6 +3,7 @@
 namespace Lomi\Payments\Gateway;
 
 use Magento\Directory\Model\CurrencyFactory;
+use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Payment\Helper\Data as PaymentHelper;
 use Magento\Sales\Model\Order;
 use Lomi\Payments\Gateway\Exception\ApiException;
@@ -25,34 +26,77 @@ class LomiApiClient
     /** @var CurrencyFactory */
     private $currencyFactory;
 
+    /** @var EncryptorInterface */
+    private $encryptor;
+
     public function __construct(
         PaymentHelper $paymentHelper,
-        CurrencyFactory $currencyFactory
+        CurrencyFactory $currencyFactory,
+        EncryptorInterface $encryptor
     ) {
         $this->currencyFactory = $currencyFactory;
+        $this->encryptor = $encryptor;
         $method = $paymentHelper->getMethodInstance(LomiMethod::CODE);
         $this->testMode = (bool) $method->getConfigData('test_mode');
-        $this->secretKey = (string) ($this->testMode
-            ? $method->getConfigData('test_secret_key')
-            : $method->getConfigData('live_secret_key'));
-        $this->webhookSecret = (string) ($this->testMode
-            ? $method->getConfigData('test_webhook_secret')
-            : $method->getConfigData('live_webhook_secret'));
+        $this->secretKey = $this->readSecret(
+            (string) ($this->testMode
+                ? $method->getConfigData('test_secret_key')
+                : $method->getConfigData('live_secret_key'))
+        );
+        $this->webhookSecret = $this->readSecret(
+            (string) ($this->testMode
+                ? $method->getConfigData('test_webhook_secret')
+                : $method->getConfigData('live_webhook_secret'))
+        );
     }
 
     /**
-     * Minor units for order grand total (API amount).
+     * Admin "obscure" fields are stored encrypted; CLI config:set may store plaintext.
+     */
+    private function readSecret(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/^\d+:\d+:/', $value)) {
+            return (string) $this->encryptor->decrypt($value);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Order total formatted for the lomi. API amount field.
+     *
+     * XOF is sent in whole francs. USD and EUR are sent in minor units (cents).
      */
     public function getOrderAmountMinorUnits(Order $order): int
     {
-        $code = $order->getOrderCurrencyCode();
-        $currency = $this->currencyFactory->create()->load($code);
-        $precision = 2;
-        if (method_exists($currency, 'getPrecision')) {
-            $precision = (int) $currency->getPrecision();
+        $code = strtoupper((string) $order->getOrderCurrencyCode());
+        $total = (float) $order->getGrandTotal();
+
+        if ($code === 'XOF') {
+            return (int) round($total);
         }
 
-        return (int) round((float) $order->getGrandTotal() * (10 ** $precision));
+        $decimals = $this->getCurrencyMinorUnitDecimals($code);
+
+        return (int) round($total * (10 ** $decimals));
+    }
+
+    /**
+     * Minor-unit precision expected by the lomi. API per currency.
+     */
+    private function getCurrencyMinorUnitDecimals(string $currency): int
+    {
+        $map = [
+            'XOF' => 0,
+            'USD' => 2,
+            'EUR' => 2,
+        ];
+
+        return $map[$currency] ?? 2;
     }
 
     private function getBaseUrl(): string

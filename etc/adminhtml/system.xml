@@ -2,62 +2,47 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
     <system>
         <section id="payment">
-            <group id="lomi" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+            <group id="lomi" translate="label" type="text" sortOrder="400" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>lomi.</label>
                 <comment>
-                    <![CDATA[<a href="https://lomi.africa" target="_blank">lomi.</a> hosted checkout. Configure API keys in the lomi. dashboard.]]>
+                    <![CDATA[<a href="https://lomi.africa" target="_blank">lomi.</a> hosted checkout. API keys and webhook signing secrets come from <a href="https://dashboard.lomi.africa" target="_blank">dashboard.lomi.africa</a>.]]>
                 </comment>
-                <field id="default_webhook" translate="label comment" type="label" sortOrder="0" showInDefault="1" showInWebsite="1" showInStore="0">
+                <field id="default_webhook" translate="label comment" type="label" sortOrder="0" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Webhook URL</label>
                     <frontend_model>Lomi\Payments\Block\System\Config\Form\Field\Webhook</frontend_model>
                 </field>
-                <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="0">
+                <field id="active" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="title" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="title" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Title</label>
+                    <comment>Leave empty to use the default lomi. branding card on checkout.</comment>
                 </field>
-                <field id="test_secret_key" translate="label" type="obscure" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Test API secret key</label>
-                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                </field>
-                <field id="test_webhook_secret" translate="label" type="obscure" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Test webhook signing secret</label>
-                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                </field>
-                <field id="live_secret_key" translate="label" type="obscure" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Live API secret key</label>
-                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                </field>
-                <field id="live_webhook_secret" translate="label" type="obscure" sortOrder="7" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Live webhook signing secret</label>
-                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                </field>
-                <field id="test_mode" translate="label" type="select" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="0">
+                <field id="test_mode" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Test Mode</label>
+                    <comment>Yes = sandbox API (lomi_sk_test_…). No = live API (lomi_sk_live_…). Turn off only after sandbox checkout and webhooks are verified.</comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="debug" translate="label" type="select" sortOrder="9" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Debug</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                <field id="test_secret_key" translate="label comment" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Test API secret key</label>
+                    <comment>Secret key from dashboard (starts with lomi_sk_test_). Not the webhook signing secret.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
-                <field id="sort_order" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Sort Order</label>
+                <field id="test_webhook_secret" translate="label comment" type="obscure" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Test webhook signing secret</label>
+                    <comment>Signing secret (whsec_…) for your test webhook endpoint in the dashboard. Paste the full value when saving.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
-                <field id="allowspecific" translate="label" type="allowspecific" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Payment from Applicable Countries</label>
-                    <source_model>Magento\Directory\Model\Config\Source\Allspecificcountries</source_model>
+                <field id="live_secret_key" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Live API secret key</label>
+                    <comment>Live secret key (lomi_sk_live_…). Required when Test Mode is No.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
-                <field id="specificcountry" translate="label" type="multiselect" sortOrder="51" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Payment from Specific Countries</label>
-                    <source_model>Magento\Directory\Model\Config\Source\Country</source_model>
-                </field>
-                <field id="min_order_total" translate="label" type="text" sortOrder="98" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Minimum Order Total</label>
-                </field>
-                <field id="max_order_total" translate="label" type="text" sortOrder="99" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Maximum Order Total</label>
+                <field id="live_webhook_secret" translate="label comment" type="obscure" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Live webhook signing secret</label>
+                    <comment>Live signing secret (whsec_…) for your production webhook endpoint. Paste the full value when saving.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
             </group>
         </section>
