@@ -94,7 +94,7 @@ Return URL pattern:
 
 `https://your-store.example/lomi/payment/callback?increment_id=…&key=…`
 
-Webhook headers: `X-Lomi-Signature`, `X-Lomi-Event` — see [webhooks documentation](https://docs.lomi.africa/build/fundamentals/webhooks).
+Webhook headers: `X-Lomi-Signature`, `X-Lomi-Event` — see [webhooks documentation](https://docs.lomi.africa/build/webhooks).
 
 ## Testing (sandbox)
 
