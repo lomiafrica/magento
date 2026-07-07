@@ -106,7 +106,7 @@ Checklist avant de désactiver le mode test :
 | Webhook **401** `auth failed` | Mauvais `whsec_…` ou mélange test/live | Recopier le secret du bon webhook (même mode que Test Mode) |
 | Webhook **200** `ignored` sur test dashboard | Normal pour `TEST_WEBHOOK` | Faire un vrai paiement test pour `PAYMENT_SUCCEEDED` |
 | Commande reste **Pending** | Webhook absent ou session pas `completed` | Vérifier logs webhook dashboard + logs Magento `var/log/system.log` |
-| Paiement OK sur checkout lomi. mais pas Magento | Pas de webhook ; pas de retour callback | Le webhook est le chemin fiable — le corriger en priorité |
+| Paiement OK sur checkout lomi. mais pas Magento | Pas de webhook ; pas de retour callback | Le webhook est le chemin fiable, le corriger en priorité |
 
 Logs Magento :
 

@@ -21,7 +21,7 @@ The extension connects your Magento store to lomi. hosted checkout:
 - Magento **2.4.x** (PHP 7.4+ / 8.x as supported by your Magento version)
 - Store currency **XOF**, **USD**, or **EUR**
 - HTTPS on production (required for webhooks and secure checkout return URLs)
-- lomi. account — [dashboard.lomi.africa](https://dashboard.lomi.africa)
+- lomi. account, [dashboard.lomi.africa](https://dashboard.lomi.africa)
 
 ## Installation
 
@@ -53,7 +53,7 @@ Copy this package to `app/code/Lomi/Payments/`, then run the same Magento comman
 | **Test webhook signing secret** | `whsec_…` from your **test** webhook endpoint |
 | **Live API secret key** | `lomi_sk_live_…` (when Test Mode is No) |
 | **Live webhook signing secret** | `whsec_…` from your **live** webhook endpoint |
-| **Webhook URL** | Read-only hint — register this URL in the dashboard |
+| **Webhook URL** | Read-only hint, register this URL in the dashboard |
 
 ### Webhooks (required for reliable order confirmation)
 
@@ -61,7 +61,7 @@ Copy this package to `app/code/Lomi/Payments/`, then run the same Magento comman
    - **URL:** `https://your-store.example/lomi/payment/webhook`
    - **Events:** at least `PAYMENT_SUCCEEDED`
 2. Copy the **signing secret** (`whsec_…`) into Magento (test or live field matching **Test Mode**).
-3. Send a test webhook from the dashboard — expect **200** with body `ignored` for test events, or `success` for real `PAYMENT_SUCCEEDED`.
+3. Send a test webhook from the dashboard, expect **200** with body `ignored` for test events, or `success` for real `PAYMENT_SUCCEEDED`.
 
 **Important:** Use the signing secret for **that specific endpoint**, not your API secret key. Test and live webhooks have different secrets.
 
@@ -94,12 +94,12 @@ Return URL pattern:
 
 `https://your-store.example/lomi/payment/callback?increment_id=…&key=…`
 
-Webhook headers: `X-Lomi-Signature`, `X-Lomi-Event` — see [webhooks documentation](https://docs.lomi.africa/build/webhooks).
+Webhook headers: `X-Lomi-Signature`, `X-Lomi-Event`: see [webhooks documentation](https://docs.lomi.africa/build/webhooks).
 
 ## Testing (sandbox)
 
 1. Enable **Test Mode** and enter test API key + test webhook secret.
-2. Create a webhook in dashboard **test mode** pointing to your store (use [ngrok](https://ngrok.com/) for local dev — see [dev/README.md](dev/README.md)).
+2. Create a webhook in dashboard **test mode** pointing to your store (use [ngrok](https://ngrok.com/) for local dev, see [dev/README.md](dev/README.md)).
 3. Place a test order; pay with card **`4242 4242 4242 4242`** (any future expiry, any CVC).
 4. Confirm:
    - Webhook log: `PAYMENT_SUCCEEDED` → **200**
@@ -139,7 +139,7 @@ Process refunds from the lomi. dashboard. Automatic Magento refunds are not incl
 
 ### REST endpoint (optional)
 
-`GET /rest/V1/lomi/verify/:checkoutSessionId` — verifies payment for the checkout session’s last order (browser session context). Defined in `etc/webapi.xml`.
+`GET /rest/V1/lomi/verify/:checkoutSessionId`: verifies payment for the checkout session’s last order (browser session context). Defined in `etc/webapi.xml`.
 
 ## Upgrade from legacy module identifiers
 
@@ -157,4 +157,4 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
