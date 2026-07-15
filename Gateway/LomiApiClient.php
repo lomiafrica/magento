@@ -200,11 +200,36 @@ class LomiApiClient
         }
 
         if ($statusCode >= 400) {
-            $message = isset($body->message) ? (string) $body->message : 'lomi. API request failed';
-            throw new ApiException($message, $statusCode);
+            $detail = isset($body->message) ? (string) $body->message : 'lomi. API request failed';
+            throw new ApiException($this->formatMerchantFacingError($statusCode, $detail, $body), $statusCode);
         }
 
         return $this->normalizePayload($body);
+    }
+
+    private function formatMerchantFacingError(int $httpCode, string $detail, object $json): string
+    {
+        $reference = '';
+        if (!empty($json->request_id)) {
+            $reference = ' (Reference: ' . (string) $json->request_id . ')';
+        } elseif (!empty($json->correlation_id)) {
+            $reference = ' (Reference: ' . (string) $json->correlation_id . ')';
+        }
+
+        $modeLabel = $this->testMode ? 'test' : 'live';
+
+        switch ($httpCode) {
+            case 401:
+                return 'Invalid secret API key for ' . $modeLabel . ' mode. Copy the key from Dashboard → Developers → API keys.' . $reference;
+            case 403:
+                return 'This API key cannot perform this action. Check key permissions in the lomi. dashboard.' . $reference;
+            case 404:
+                return 'lomi. could not find this resource. Confirm test/live mode matches the keys in your dashboard.' . $reference;
+            case 422:
+                return 'Payment could not be created: ' . $detail . '.' . $reference;
+            default:
+                return 'lomi. returned an error (' . $httpCode . '): ' . $detail . '.' . $reference . ' See docs.lomi.africa/build/ecommerce-extensions/magento.';
+        }
     }
 
     private function normalizePayload(object $json): object
