@@ -1,14 +1,14 @@
-# IDEs
+# Editor
 .project
 .pydevproject
 .idea
 .settings
 
-# Composer
+# Dependencies
 composer.phar
 /vendor/
 
-# Random files
+# Local
 *~
 \#*
 /nbproject/
