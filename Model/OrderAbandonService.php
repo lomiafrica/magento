@@ -86,6 +86,15 @@ class OrderAbandonService
             return null;
         }
 
+        return $this->resolvePendingOrderFromSession();
+    }
+
+    /**
+     * Last pending hosted-checkout order in this shopper session.
+     * Call only from CSRF-checked POST handlers.
+     */
+    public function resolvePendingOrderFromSession(): ?Order
+    {
         $order = $this->checkoutSession->getLastRealOrder();
         if ($order && $order->getId() && $this->isAbandonable($order)) {
             return $order;

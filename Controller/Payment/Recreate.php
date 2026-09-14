@@ -53,9 +53,13 @@ class Recreate extends AbstractLomiPayment
         $incrementId = (string) $this->request->getParam('increment_id');
         $protectCode = (string) $this->request->getParam('key');
 
+        if ($incrementId === '' || $protectCode === '') {
+            return $this->_redirect('checkout', ['_fragment' => 'payment']);
+        }
+
         $order = $this->orderAbandonService->resolvePendingOrder(
-            $incrementId !== '' ? $incrementId : null,
-            $protectCode !== '' ? $protectCode : null
+            $incrementId,
+            $protectCode
         );
 
         if ($order) {

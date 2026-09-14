@@ -2,6 +2,13 @@
 
 All notable changes to **lomi/magento2-payments** are documented here.
 
+## 5.0.1
+
+### Security
+
+- Checkout abandon is POST-only and checks Magento's form key. A crafted GET can no longer cancel a pending order.
+- Recreate (hosted cancel URL) requires the order increment id and protect code. It no longer falls back to the session's last order.
+
 ## 5.0.0
 
 ### Added

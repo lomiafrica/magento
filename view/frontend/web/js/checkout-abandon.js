@@ -55,18 +55,37 @@
 
         var config = getLomiConfig();
         var abandonUrl = config.abandon_url;
+        var formKey = (window.FORM_KEY || (window.checkoutConfig && window.checkoutConfig.formKey) || '');
+        var stored = {};
 
-        if (!abandonUrl) {
+        try {
+            stored = raw ? JSON.parse(raw) : {};
+        } catch (error) {
+            stored = {};
+        }
+
+        if (!abandonUrl || !formKey) {
             window.location.reload();
             return;
         }
 
+        var body = 'form_key=' + encodeURIComponent(formKey);
+        if (stored.incrementId) {
+            body += '&increment_id=' + encodeURIComponent(stored.incrementId);
+        }
+        if (stored.key) {
+            body += '&key=' + encodeURIComponent(stored.key);
+        }
+
         window.fetch(abandonUrl, {
-            method: 'GET',
+            method: 'POST',
             credentials: 'same-origin',
             headers: {
-                Accept: 'application/json'
-            }
+                Accept: 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: body
         })
             .catch(function () {
                 return null;

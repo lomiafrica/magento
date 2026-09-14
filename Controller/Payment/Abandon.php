@@ -3,9 +3,12 @@
 namespace Lomi\Payments\Controller\Payment;
 
 use Lomi\Payments\Model\OrderAbandonService;
+use Magento\Framework\App\CsrfAwareActionInterface;
+use Magento\Framework\App\Request\InvalidRequestException;
+use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\ResultFactory;
 
-class Abandon extends AbstractLomiPayment
+class Abandon extends AbstractLomiPayment implements CsrfAwareActionInterface
 {
     /** @var OrderAbandonService */
     private $orderAbandonService;
@@ -44,6 +47,24 @@ class Abandon extends AbstractLomiPayment
         );
     }
 
+    public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
+    {
+        /** @var \Magento\Framework\Controller\Result\Json $result */
+        $result = $this->resultFactory->create(ResultFactory::TYPE_JSON);
+        $result->setHttpResponseCode(403);
+        $result->setData([
+            'success' => false,
+            'abandoned' => false,
+        ]);
+
+        return new InvalidRequestException($result);
+    }
+
+    public function validateForCsrf(RequestInterface $request): ?bool
+    {
+        return $request->isPost() ? null : false;
+    }
+
     /**
      * Browser returned to checkout without completing hosted payment.
      *
@@ -51,7 +72,24 @@ class Abandon extends AbstractLomiPayment
      */
     public function execute()
     {
-        $order = $this->orderAbandonService->resolvePendingOrder(null, null);
+        /** @var \Magento\Framework\Controller\Result\Json $result */
+        $result = $this->resultFactory->create(ResultFactory::TYPE_JSON);
+
+        if (!$this->getRequest()->isPost()) {
+            $result->setHttpResponseCode(405);
+            $result->setData([
+                'success' => false,
+                'abandoned' => false,
+            ]);
+
+            return $result;
+        }
+
+        $incrementId = (string) $this->getRequest()->getParam('increment_id');
+        $protectCode = (string) $this->getRequest()->getParam('key');
+        $order = $incrementId !== '' && $protectCode !== ''
+            ? $this->orderAbandonService->resolvePendingOrder($incrementId, $protectCode)
+            : $this->orderAbandonService->resolvePendingOrderFromSession();
         $abandoned = false;
 
         if ($order) {
@@ -67,8 +105,6 @@ class Abandon extends AbstractLomiPayment
             }
         }
 
-        /** @var \Magento\Framework\Controller\Result\Json $result */
-        $result = $this->resultFactory->create(ResultFactory::TYPE_JSON);
         $result->setData([
             'success' => true,
             'abandoned' => $abandoned,
