@@ -64,6 +64,12 @@ class CheckoutSessionVerifier
             return false;
         }
 
+        if ($order->getState() === Order::STATE_CANCELED) {
+            $this->flagPaidAfterCancel($order, $session);
+
+            return true;
+        }
+
         if (!in_array($order->getStatus(), ['pending', 'pending_payment'], true)) {
             $this->logger->info('lomi.: order not awaiting payment, skipping verify dispatch', [
                 'increment_id' => $order->getIncrementId(),
@@ -94,6 +100,34 @@ class CheckoutSessionVerifier
         }
 
         return true;
+    }
+
+    /**
+     * A completed lomi. payment on a cancelled order needs a merchant decision
+     * (reinstate or refund). Leave a visible note once instead of ignoring it.
+     */
+    private function flagPaidAfterCancel(Order $order, object $session): void
+    {
+        $payment = $order->getPayment();
+        if (!$payment || $payment->getAdditionalInformation('lomi_paid_after_cancel')) {
+            return;
+        }
+
+        $this->logger->warning('lomi.: payment completed on a cancelled order', [
+            'increment_id' => $order->getIncrementId(),
+        ]);
+
+        try {
+            $payment->setAdditionalInformation('lomi_paid_after_cancel', '1');
+            $order->addCommentToStatusHistory(
+                'lomi.: payment completed on this cancelled order (checkout session '
+                . ($session->checkout_session_id ?? '') . '). The customer was charged. '
+                . 'Reinstate the order or refund the payment from the lomi. dashboard.'
+            );
+            $this->orderRepository->save($order);
+        } catch (\Throwable $e) {
+            $this->logger->error('lomi.: failed to flag paid cancelled order', ['error' => $e->getMessage()]);
+        }
     }
 
     private function holdOrderWithComment(Order $order, $comment): void

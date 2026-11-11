@@ -76,16 +76,31 @@ class Callback extends AbstractLomiPayment
             $session = $this->lomiClient->fetchCheckoutSession((string) $sessionId);
             $status = strtolower((string) ($session->status ?? ''));
 
-            if ($status !== 'completed') {
+            if ($status === 'expired') {
                 $this->orderAbandonService->abandon(
                     $order,
-                    'lomi.: hosted checkout returned without a completed payment.'
+                    'lomi.: hosted checkout session expired without a completed payment.'
                 );
                 $this->messageManager->addNoticeMessage(
                     __('Payment was cancelled. Your cart has been restored — you can place your order again.')
                 );
 
                 return $this->_redirect('checkout', ['_fragment' => 'payment']);
+            }
+
+            if ($status !== 'completed') {
+                // Mobile money can still complete after the shopper returns. Keep the order
+                // pending so the PAYMENT_SUCCEEDED webhook can mark it paid.
+                $order->addCommentToStatusHistory(
+                    'lomi.: shopper returned before payment was confirmed (session status: '
+                    . ($status ?: 'unknown') . '). Waiting for lomi. confirmation.'
+                );
+                $this->orderRepository->save($order);
+                $this->messageManager->addNoticeMessage(
+                    __('Your payment is being confirmed. Your order will be updated as soon as lomi. confirms it.')
+                );
+
+                return $this->redirectToFinal(true);
             }
 
             $ok = $this->checkoutSessionVerifier->verifyAndDispatch($order, $session);
