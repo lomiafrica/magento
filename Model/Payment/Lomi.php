@@ -20,7 +20,7 @@ class Lomi extends \Magento\Payment\Model\Method\AbstractMethod
         }
         if ($quote && $quote->getCurrency()) {
             $code = strtoupper((string) $quote->getCurrency()->getQuoteCurrencyCode());
-            $allowed = ['XOF', 'USD', 'EUR'];
+            $allowed = ['XOF', 'USD', 'EUR', 'GBP', 'CAD', 'XAF', 'GHS', 'KES', 'MAD', 'ZAR'];
             if (!in_array($code, $allowed, true)) {
                 return false;
             }
